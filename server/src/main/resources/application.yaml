@@ -1,3 +1,16 @@
 spring:
   application:
     name: prereq-visualizer
+
+  # Database configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/prereq_visualizer
+    username: postgres
+    password: postgres
+  jpa:
+      hibernate:
+        ddl-auto: none
+      show-sql: true
+
+server:
+  port: 8080
