@@ -13,11 +13,11 @@ public class TestItem {
     @Id // This wrapper signifies that it is specifically an id field
     @GeneratedValue(strategy = GenerationType.IDENTITY) // This days to generate a new id value if there is none
     private Long id;
-
+                                            
     private String name;
 
         public TestItem() {
-    }
+    }                                      
 
     public TestItem(Long id, String name) {
         this.id = id;

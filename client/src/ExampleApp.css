@@ -1,0 +1,29 @@
+.page-shell {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.card-shell {
+  margin-top: 1.5rem;
+  border: 1px solid #d8dde6;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(20, 34, 66, 0.08);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.item-list {
+  text-align: left;
+}
+
+.error-text {
+  color: #b42318;
+}
