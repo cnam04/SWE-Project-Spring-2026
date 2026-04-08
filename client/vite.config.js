@@ -9,7 +9,7 @@ const apiTarget = process.env.VITE_API_BASE_URL || 'http://localhost:8080';
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true,          // listen on 0.0.0.0 so Docker port-mapping works
+    host: '0.0.0.0',          // listen on 0.0.0.0 so Docker port-mapping works
     proxy: {
       '/api': {
         target: apiTarget,

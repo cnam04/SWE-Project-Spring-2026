@@ -24,6 +24,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1s"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400ms"
+    command: ["./mvnw", "spring-boot:run"]
+    volumes:
+      - ./server:/app
+      - m2_cache:/root/.m2
 
   # ── React / Vite frontend ──
   frontend:
@@ -33,6 +40,15 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "100"
+      VITE_API_BASE_URL: http://backend:8080
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    volumes:
+      - ./client:/app
+      - /app/node_modules
 
 volumes:
   pgdata:
+  m2_cache:
