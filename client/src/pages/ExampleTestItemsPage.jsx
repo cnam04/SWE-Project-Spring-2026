@@ -23,7 +23,11 @@ function TestItemsPage() {
     <main className="page-shell">
       <h1>Course Prereq Visualizer</h1>
       <p>Layered frontend example: Page -&gt; Handler -&gt; Service -&gt; util -&gt; api.js</p>
-
+      <section className="card-shell">
+        <div className="card-header">
+          <h1>DB Test Connection</h1>
+        </div>
+      </section>
       <section className="card-shell">
         <div className="card-header">
           <h2>Backend test items</h2>

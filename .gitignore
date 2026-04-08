@@ -89,3 +89,7 @@ nbdist/
 !**/src/test/**/target/
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+
+# Personal docs
+DOCKER_DEVELOPMENT_GUIDE.md
