@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../styles/CoursePrereqPage.css';
+import ReactFlowVisualization from '../components/ReactFlowVisualization';
 
 const DUMMY_COURSES = [
   {
@@ -113,11 +114,7 @@ export default function CoursePrereqPage() {
                 Placeholder canvas for React Flow nodes and edges.
               </p>
 
-              <div className="graph-canvas-placeholder mb-4">
-                <p className="has-text-grey is-size-7 has-text-centered mb-0">
-                  React Flow canvas will render here.
-                </p>
-              </div>
+                <ReactFlowVisualization />
 
               {filteredCourses.length ? (
                 <div className="sample-node-list">

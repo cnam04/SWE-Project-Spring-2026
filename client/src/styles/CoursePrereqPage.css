@@ -10,6 +10,10 @@
   margin-bottom: 0.5rem;
 }
 
+.sample-node-list {
+  margin-top: 1rem;
+}
+
 .graph-canvas-placeholder {
   min-height: 20rem;
   display: flex;

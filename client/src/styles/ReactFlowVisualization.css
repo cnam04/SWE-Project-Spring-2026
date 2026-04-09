@@ -1,0 +1,6 @@
+.react-flow-wrapper {
+  width: 100%;
+  height: clamp(350px, 50vh, 700px);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+}
