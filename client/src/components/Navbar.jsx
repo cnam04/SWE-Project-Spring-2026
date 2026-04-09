@@ -4,10 +4,32 @@ import '../styles/Navbar.css';
 
 export default function Navbar() {
   return (
-    <nav className="navbar top-section">
-      <NavLink to="/">Test Items</NavLink>
-      <NavLink to="/admin">Admin</NavLink>
-      <NavLink to="/prereq-vis">Course Prerequisites</NavLink>
-    </nav>
+    <header className="app-navbar">
+      <div className="container is-app">
+        <div className="is-flex is-justify-content-space-between is-align-items-center is-flex-wrap-wrap py-3 gap-3">
+          <p className="title is-6 mb-0 brand-title">Course Prerequisite Visualizer</p>
+          <nav className="buttons has-addons  nav-links" aria-label="Primary">
+            <NavLink
+              to="/"
+              className={({ isActive }) => `button is-light ${isActive ? 'is-link is-selected' : ''}`}
+            >
+              DB Health Check
+            </NavLink>
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `button is-light ${isActive ? 'is-link is-selected' : ''}`}
+            >
+              Admin
+            </NavLink>
+            <NavLink
+              to="/prereq-vis"
+              className={({ isActive }) => `button is-light ${isActive ? 'is-link is-selected' : ''}`}
+            >
+              Course Prerequisites
+            </NavLink>
+          </nav>
+        </div>
+      </div>
+    </header>
   );
 }

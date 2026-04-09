@@ -1,31 +1,103 @@
+:root {
+  color-scheme: light;
+
+  --np-blue-900: #003b71;
+  --np-blue-800: #00315f;
+  --np-blue-700: #0c4b87;
+  --np-blue-100: #d6e2f2;
+  --np-gray-050: #f3f5f8;
+  --np-gray-100: #e9edf2;
+  --np-gray-200: #c5cfdb;
+  --np-gray-600: #5f6c7d;
+  --np-gray-900: #1f2b3a;
+  --np-orange-500: #f28a22;
+
+  --app-background: linear-gradient(180deg, #e7ebf0 0%, #dfe4ea 100%);
+  --app-surface: #f7f9fc;
+  --app-border: #c2ccd9;
+  --app-text: var(--np-gray-900);
+  --app-muted: var(--np-gray-600);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
-  color: #16213a;
-  background: #f5f7fb;
+  color: var(--app-text);
+  background: var(--app-background);
   min-width: 320px;
-  min-height: 100vh;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid #cad2e0;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 600;
-  font-family: inherit;
+.title,
+.label,
+.has-text-weight-semibold {
+  color: var(--app-text);
+}
+
+.subtitle,
+.has-text-grey,
+.is-size-7.has-text-grey {
+  color: var(--app-muted) !important;
+}
+
+.box {
+  background-color: var(--app-surface);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+}
+
+.input,
+.select select {
   background-color: #ffffff;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  color: var(--app-text);
+  border-color: #bac6d5;
 }
 
-button:hover {
-  background-color: #eef2fa;
+.input:focus,
+.input:active,
+.select select:focus,
+.select select:active {
+  border-color: var(--np-blue-700);
+  box-shadow: 0 0 0 0.125em rgba(12, 75, 135, 0.2);
 }
 
-@media (max-width: 640px) {
-  .page-shell {
-    padding: 1rem;
-  }
+.input::placeholder {
+  color: var(--app-muted);
+  opacity: 1;
+}
+
+.button.is-link.is-light {
+  background-color: var(--np-blue-100);
+  border-color: #9db4d3;
+  color: #0f3f73;
+}
+
+.button.is-link.is-light:hover {
+  background-color: #c8d8ed;
+}
+
+.button.is-warning.is-light {
+  background-color: #fde9d6;
+  border-color: #f5c38e;
+  color: #8f4f13;
+}
+
+.tag.is-light {
+  background-color: var(--np-gray-100);
+  color: #2e3f53;
+}
+
+.tag.is-info.is-light {
+  background-color: #d8e5f5;
+  color: #0f3f73;
+}
+
+.tag.is-success.is-light {
+  background-color: #dce9dc;
+  color: #2b5d31;
 }

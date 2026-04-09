@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS test_items (
 );
 
 INSERT INTO test_items (name) VALUES
-    ('Calculus I'),
-    ('Intro to Computer Science'),
-    ('Data Structures'),
-    ('Linear Algebra'),
-    ('Discrete Mathematics');
+    ('The'),
+    ('Database'),
+    ('is'),
+    ('working!'),
+    ('Nice :)');
+
+

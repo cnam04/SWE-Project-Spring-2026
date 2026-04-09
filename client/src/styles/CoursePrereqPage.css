@@ -1,46 +1,47 @@
-.prereq-page {
+.prereq-layout {
+  align-items: stretch;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.legend-stack p {
+  margin-bottom: 0.5rem;
+}
+
+.graph-canvas-placeholder {
+  min-height: 20rem;
   display: flex;
-  flex-direction: column;
-  height: calc(100vh - 60px); /* Leave room for Navbar */
-  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #98adc8;
+  border-radius: 10px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(218, 228, 242, 0.9),
+    rgba(218, 228, 242, 0.9) 12px,
+    rgba(248, 250, 253, 1) 12px,
+    rgba(248, 250, 253, 1) 24px
+  );
 }
 
-.main-content {
+.node-item + .node-item {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #ccd6e3;
+}
+
+.detail-row {
   display: flex;
-  flex: 1;
-  overflow: hidden;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
-.left-sidebar {
-  width: 250px;
-  background-color: #fafafa;
-  border-right: 1px solid #ddd;
-  padding: 1rem;
-  overflow-y: auto;
-}
-
-.center-container {
-  flex: 1;
-  padding: 1rem;
-  overflow-y: auto;
-  background-color: #fff;
-}
-
-.right-panel {
-  width: 300px;
-  background-color: #fafafa;
-  border-left: 1px solid #ddd;
-  padding: 1rem;
-  overflow-y: auto;
-}
-
-.course-card {
-  border: 1px solid #ccc;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-}
-
-.course-card h3 {
-  margin-top: 0;
+@media (max-width: 768px) {
+  .graph-canvas-placeholder {
+    min-height: 14rem;
+  }
 }
