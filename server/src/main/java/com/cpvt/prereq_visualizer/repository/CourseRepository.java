@@ -1,6 +1,9 @@
 package com.cpvt.prereq_visualizer.repository;
 
 import java.sql.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -100,6 +103,88 @@ public class CourseRepository {
 		return jdbcTemplate.query(childrenSql,
 				(rs, rowNum) -> rs.getInt("child_node_id"),
 				parentNodeId);
+	}
+
+	public Integer insertCourse(String courseCode, String crn, String title, Integer credits, List<String> attributes) {
+		final List<String> safeAttributes = attributes == null ? List.of() : attributes;
+
+		return jdbcTemplate.execute((Connection connection) -> {
+			String sql = """
+					INSERT INTO courses (course_code, crn, title, credits, attributes)
+					VALUES (?, ?, ?, ?, ?)
+					RETURNING course_id
+					""";
+
+			try (PreparedStatement statement = connection.prepareStatement(sql)) {
+				statement.setString(1, courseCode);
+				statement.setString(2, crn);
+				statement.setString(3, title);
+				statement.setInt(4, credits);
+
+				Array attributesArray = connection.createArrayOf("text", safeAttributes.toArray(String[]::new));
+				try {
+					statement.setArray(5, attributesArray);
+
+					try (ResultSet resultSet = statement.executeQuery()) {
+						if (resultSet.next()) {
+							return resultSet.getInt("course_id");
+						}
+					}
+				} finally {
+					attributesArray.free();
+				}
+			}
+
+			throw new IllegalStateException("Insert course failed to return a course_id");
+		});
+	}
+
+	public Optional<Integer> findCourseIdByCourseCode(String courseCode) {
+		String sql = """
+				SELECT course_id
+				FROM courses
+				WHERE LOWER(course_code) = LOWER(?)
+				""";
+
+		List<Integer> ids = jdbcTemplate.query(sql,
+				(rs, rowNum) -> rs.getInt("course_id"),
+				courseCode);
+
+		return ids.stream().findFirst();
+	}
+
+	public Integer insertPrerequisiteNode(Integer courseId, String nodeType, Integer requiredCourseId) {
+		String sql = """
+				INSERT INTO prerequisite_nodes (course_id, node_type, required_course_id)
+				VALUES (?, ?, ?)
+				RETURNING node_id
+				""";
+
+		Integer nodeId = jdbcTemplate.queryForObject(sql, Integer.class, courseId, nodeType, requiredCourseId);
+		if (nodeId == null) {
+			throw new IllegalStateException("Insert prerequisite node failed to return node_id");
+		}
+
+		return nodeId;
+	}
+
+	public void insertPrerequisiteEdge(Integer parentNodeId, Integer childNodeId, Integer sortOrder) {
+		String sql = """
+				INSERT INTO prerequisite_node_edges (parent_node_id, child_node_id, sort_order)
+				VALUES (?, ?, ?)
+				""";
+
+		jdbcTemplate.update(sql, parentNodeId, childNodeId, sortOrder);
+	}
+
+	public void updateCourseRootPrerequisiteNodeId(Integer courseId, Integer rootPrerequisiteNodeId) {
+		String sql = """
+				UPDATE courses
+				SET root_prerequisite_node_id = ?
+				WHERE course_id = ?
+				""";
+
+		jdbcTemplate.update(sql, rootPrerequisiteNodeId, courseId);
 	}
 
 	// Converts Postgres TEXT[] from JDBC into a JSON-friendly List<String>.

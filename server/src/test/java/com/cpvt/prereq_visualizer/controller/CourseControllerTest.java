@@ -4,19 +4,24 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
 import com.cpvt.prereq_visualizer.model.CourseModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
+import com.cpvt.prereq_visualizer.service.CourseConflictException;
 import com.cpvt.prereq_visualizer.service.CourseService;
+import com.cpvt.prereq_visualizer.service.CourseValidationException;
 
 @WebMvcTest(CourseController.class)
 class CourseControllerTest {
@@ -86,5 +91,78 @@ class CourseControllerTest {
 
 		mockMvc.perform(get("/api/courses/999"))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void createCourse_returnsCreatedCourseDetail() throws Exception {
+		CourseDetailModel created = new CourseDetailModel(
+				20,
+				"CPS250",
+				"10250",
+				"Programming Languages",
+				3,
+				List.of("Core"),
+				null);
+
+		when(courseService.createCourse(any())).thenReturn(created);
+
+		String requestBody = """
+				{
+				  "course_code": "CPS250",
+				  "crn": "10250",
+				  "title": "Programming Languages",
+				  "credits": 3,
+				  "attributes": ["Core"],
+				  "prerequisiteTree": null
+				}
+				""";
+
+		mockMvc.perform(post("/api/courses")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.course_id").value(20))
+				.andExpect(jsonPath("$.course_code").value("CPS250"))
+				.andExpect(jsonPath("$.title").value("Programming Languages"));
+	}
+
+	@Test
+	void createCourse_whenValidationFails_returns400() throws Exception {
+		when(courseService.createCourse(any()))
+				.thenThrow(new CourseValidationException("credits must be >= 0"));
+
+		String requestBody = """
+				{
+				  "course_code": "CPS250",
+				  "title": "Programming Languages",
+				  "credits": -1,
+				  "attributes": []
+				}
+				""";
+
+		mockMvc.perform(post("/api/courses/")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void createCourse_whenCourseCodeExists_returns409() throws Exception {
+		when(courseService.createCourse(any()))
+				.thenThrow(new CourseConflictException("Course code already exists: CPS250"));
+
+		String requestBody = """
+				{
+				  "course_code": "CPS250",
+				  "title": "Programming Languages",
+				  "credits": 3,
+				  "attributes": []
+				}
+				""";
+
+		mockMvc.perform(post("/api/courses")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isConflict());
 	}
 }
