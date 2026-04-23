@@ -22,7 +22,7 @@ public class ExampleController {
         return "Backend works. try testing /api/"; // Returns hard coded data
     }
 
-    @GetMapping("/api/") // GetMapping maps the url to the endpoint -> you could type http://localhost:8080/poop and it would go to this endpoint
+    @GetMapping("/api/") // GetMapping maps the url to the endpoint -> you could type http://localhost:8080/api/ and it would go to this endpoint
     public ExampleModel example() { // this is the controller for this request
         return exampleService.exampleMethod(); // send the data returned by exampleService.exampleMethod() to the client
     }

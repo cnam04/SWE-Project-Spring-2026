@@ -93,3 +93,4 @@ nbdist/
 
 # Personal docs
 DOCKER_DEVELOPMENT_GUIDE.md
+API_ENDPOINTS_DOCS.md
