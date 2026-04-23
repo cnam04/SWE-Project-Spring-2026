@@ -12,7 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -164,5 +166,139 @@ class CourseControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(requestBody))
 				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void updateCourseById_returnsUpdatedCourseSummary() throws Exception {
+		CourseModel updated = new CourseModel(
+				8,
+				"CPS310",
+				"10008",
+				"Algorithms and Analysis",
+				4,
+				List.of("Advanced Core"));
+
+		when(courseService.updateCourse(any(), any())).thenReturn(Optional.of(updated));
+
+		String requestBody = """
+				{
+				  "title": "Algorithms and Analysis",
+				  "credits": 4
+				}
+				""";
+
+		mockMvc.perform(patch("/api/courses/8")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.course_id").value(8))
+				.andExpect(jsonPath("$.course_code").value("CPS310"))
+				.andExpect(jsonPath("$.title").value("Algorithms and Analysis"))
+				.andExpect(jsonPath("$.credits").value(4));
+	}
+
+	@Test
+	void updateCourseById_whenMissing_returns404() throws Exception {
+		when(courseService.updateCourse(any(), any())).thenReturn(Optional.empty());
+
+		String requestBody = """
+				{
+				  "title": "Algorithms and Analysis"
+				}
+				""";
+
+		mockMvc.perform(patch("/api/courses/999")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void updateCourseById_whenValidationFails_returns400() throws Exception {
+		when(courseService.updateCourse(any(), any()))
+				.thenThrow(new CourseValidationException("At least one updatable field must be provided"));
+
+		mockMvc.perform(patch("/api/courses/8")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void updateCoursePrerequisites_returnsUpdatedCourseDetail() throws Exception {
+		PrerequisiteTreeNodeModel prerequisiteTree = new PrerequisiteTreeNodeModel(
+				"COURSE",
+				"CPS330",
+				null);
+
+		CourseDetailModel updated = new CourseDetailModel(
+				12,
+				"CPS410",
+				"10012",
+				"Advanced Topics in CS",
+				3,
+				List.of("Capstone Track"),
+				prerequisiteTree);
+
+		when(courseService.updateCoursePrerequisites(any(), any())).thenReturn(Optional.of(updated));
+
+		String requestBody = """
+				{
+				  "prerequisiteTree": {
+				    "type": "COURSE",
+				    "courseCode": "CPS330"
+				  }
+				}
+				""";
+
+		mockMvc.perform(put("/api/courses/12/prerequisites")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.course_id").value(12))
+				.andExpect(jsonPath("$.course_code").value("CPS410"))
+				.andExpect(jsonPath("$.prerequisiteTree.type").value("COURSE"))
+				.andExpect(jsonPath("$.prerequisiteTree.courseCode").value("CPS330"));
+	}
+
+	@Test
+	void updateCoursePrerequisites_whenMissing_returns404() throws Exception {
+		when(courseService.updateCoursePrerequisites(any(), any())).thenReturn(Optional.empty());
+
+		String requestBody = """
+				{
+				  "prerequisiteTree": null
+				}
+				""";
+
+		mockMvc.perform(put("/api/courses/999/prerequisites")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void updateCoursePrerequisites_whenValidationFails_returns400() throws Exception {
+		when(courseService.updateCoursePrerequisites(any(), any()))
+				.thenThrow(new CourseValidationException("AND nodes must contain at least 2 children"));
+
+		String requestBody = """
+				{
+				  "prerequisiteTree": {
+				    "type": "AND",
+				    "children": [
+				      {
+				        "type": "COURSE",
+				        "courseCode": "CPS210"
+				      }
+				    ]
+				  }
+				}
+				""";
+
+		mockMvc.perform(put("/api/courses/12/prerequisites")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest());
 	}
 }

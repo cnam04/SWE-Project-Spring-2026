@@ -13,8 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.cpvt.prereq_visualizer.model.CourseCreateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
+import com.cpvt.prereq_visualizer.model.CourseModel;
+import com.cpvt.prereq_visualizer.model.CoursePatchRequestModel;
+import com.cpvt.prereq_visualizer.model.CoursePrerequisitesUpdateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseWithRootPrerequisiteModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
 import com.cpvt.prereq_visualizer.repository.CourseRepository;
@@ -245,5 +250,173 @@ class CourseServiceTest {
 				() -> courseService.createCourse(request));
 		assertEquals("AND nodes must contain at least 2 children", exception.getMessage());
 		verify(courseRepository, never()).insertCourse(anyString(), anyString(), anyString(), anyInt(), anyList());
+	}
+
+	@Test
+	void updateCourse_whenCourseNotFound_returnsEmpty() {
+		when(courseRepository.findCourseWithRootPrerequisiteById(999)).thenReturn(Optional.empty());
+
+		CoursePatchRequestModel request = new CoursePatchRequestModel(null, null, "Updated title", null, null);
+		Optional<CourseModel> result = courseService.updateCourse(999, request);
+
+		assertTrue(result.isEmpty());
+		verify(courseRepository, never()).updateCourseSummaryFields(anyInt(), anyString(), anyString(), anyString(), anyInt(), anyList());
+	}
+
+	@Test
+	void updateCourse_withValidPatch_updatesAndReturnsSummary() {
+		CourseWithRootPrerequisiteModel existing = new CourseWithRootPrerequisiteModel(
+				8,
+				"CPS310",
+				"10008",
+				"Algorithms",
+				3,
+				List.of("Advanced Core"),
+				2);
+
+		CourseWithRootPrerequisiteModel updated = new CourseWithRootPrerequisiteModel(
+				8,
+				"CPS310",
+				"10008",
+				"Algorithms and Analysis",
+				4,
+				List.of("Advanced Core"),
+				2);
+
+		when(courseRepository.findCourseWithRootPrerequisiteById(8))
+				.thenReturn(Optional.of(existing))
+				.thenReturn(Optional.of(updated));
+		when(courseRepository.updateCourseSummaryFields(
+				8,
+				"CPS310",
+				"10008",
+				"Algorithms and Analysis",
+				4,
+				List.of("Advanced Core"))).thenReturn(1);
+
+		CoursePatchRequestModel request = new CoursePatchRequestModel(
+				null,
+				null,
+				"Algorithms and Analysis",
+				4,
+				null);
+
+		CourseModel result = courseService.updateCourse(8, request).orElseThrow();
+
+		assertEquals(8, result.getCourseId());
+		assertEquals("Algorithms and Analysis", result.getTitle());
+		assertEquals(4, result.getCredits());
+	}
+
+	@Test
+	void updateCourse_whenCourseCodeConflicts_throwsConflict() {
+		CourseWithRootPrerequisiteModel existing = new CourseWithRootPrerequisiteModel(
+				8,
+				"CPS310",
+				"10008",
+				"Algorithms",
+				3,
+				List.of("Advanced Core"),
+				null);
+
+		when(courseRepository.findCourseWithRootPrerequisiteById(8)).thenReturn(Optional.of(existing));
+		when(courseRepository.findCourseIdByCourseCode("CPS320")).thenReturn(Optional.of(9));
+
+		CoursePatchRequestModel request = new CoursePatchRequestModel("CPS320", null, null, null, null);
+
+		CourseConflictException exception = assertThrows(
+				CourseConflictException.class,
+				() -> courseService.updateCourse(8, request));
+		assertEquals("Course code already exists: CPS320", exception.getMessage());
+		verify(courseRepository, never()).updateCourseSummaryFields(anyInt(), anyString(), anyString(), anyString(), anyInt(), anyList());
+	}
+
+	@Test
+	void updateCoursePrerequisites_withNullTree_clearsExistingPrerequisites() {
+		CourseWithRootPrerequisiteModel existing = new CourseWithRootPrerequisiteModel(
+				12,
+				"CPS410",
+				"10012",
+				"Advanced Topics in CS",
+				3,
+				List.of("Capstone Track"),
+				12);
+
+		CourseWithRootPrerequisiteModel updated = new CourseWithRootPrerequisiteModel(
+				12,
+				"CPS410",
+				"10012",
+				"Advanced Topics in CS",
+				3,
+				List.of("Capstone Track"),
+				null);
+
+		when(courseRepository.findCourseWithRootPrerequisiteById(12))
+				.thenReturn(Optional.of(existing))
+				.thenReturn(Optional.of(updated));
+
+		CoursePrerequisitesUpdateRequestModel request = new CoursePrerequisitesUpdateRequestModel(null);
+
+		CourseDetailModel result = courseService.updateCoursePrerequisites(12, request).orElseThrow();
+
+		assertNull(result.getPrerequisiteTree());
+		verify(courseRepository).updateCourseRootPrerequisiteNodeId(12, null);
+		verify(courseRepository).deletePrerequisiteNodesByCourseId(12);
+		verify(courseRepository, never()).insertPrerequisiteNode(anyInt(), anyString(), anyInt());
+	}
+
+	@Test
+	void updateCoursePrerequisites_withTree_replacesExistingTree() {
+		CourseWithRootPrerequisiteModel existing = new CourseWithRootPrerequisiteModel(
+				12,
+				"CPS410",
+				"10012",
+				"Advanced Topics in CS",
+				3,
+				List.of("Capstone Track"),
+				12);
+
+		CourseWithRootPrerequisiteModel referencedPrereqCourse = new CourseWithRootPrerequisiteModel(
+				10,
+				"CPS330",
+				"10010",
+				"Operating Systems",
+				3,
+				List.of("Advanced Core"),
+				null);
+
+		CourseWithRootPrerequisiteModel updated = new CourseWithRootPrerequisiteModel(
+				12,
+				"CPS410",
+				"10012",
+				"Advanced Topics in CS",
+				3,
+				List.of("Capstone Track"),
+				300);
+
+		when(courseRepository.findCourseWithRootPrerequisiteById(12))
+				.thenReturn(Optional.of(existing))
+				.thenReturn(Optional.of(updated));
+		when(courseRepository.findCourseWithRootPrerequisiteById(10))
+				.thenReturn(Optional.of(referencedPrereqCourse));
+		when(courseRepository.findCourseIdByCourseCode("CPS330")).thenReturn(Optional.of(10));
+		when(courseRepository.insertPrerequisiteNode(12, "COURSE", 10)).thenReturn(300);
+		when(courseRepository.findPrerequisiteNodeById(300))
+				.thenReturn(Optional.of(new PrerequisiteTreeNodeModel("COURSE", "CPS330", null)));
+
+		CoursePrerequisitesUpdateRequestModel request = new CoursePrerequisitesUpdateRequestModel(
+				new PrerequisiteTreeNodeModel("COURSE", "CPS330", null));
+
+		CourseDetailModel result = courseService.updateCoursePrerequisites(12, request).orElseThrow();
+
+		assertNotNull(result.getPrerequisiteTree());
+		assertEquals("COURSE", result.getPrerequisiteTree().getType());
+		assertEquals("CPS330", result.getPrerequisiteTree().getCourseCode());
+
+		InOrder inOrder = inOrder(courseRepository);
+		inOrder.verify(courseRepository).updateCourseRootPrerequisiteNodeId(12, null);
+		inOrder.verify(courseRepository).deletePrerequisiteNodesByCourseId(12);
+		inOrder.verify(courseRepository).insertPrerequisiteNode(12, "COURSE", 10);
+		inOrder.verify(courseRepository).updateCourseRootPrerequisiteNodeId(12, 300);
 	}
 }

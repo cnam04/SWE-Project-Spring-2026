@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cpvt.prereq_visualizer.model.CourseCreateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
 import com.cpvt.prereq_visualizer.model.CourseModel;
+import com.cpvt.prereq_visualizer.model.CoursePatchRequestModel;
+import com.cpvt.prereq_visualizer.model.CoursePrerequisitesUpdateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseWithRootPrerequisiteModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
 import com.cpvt.prereq_visualizer.repository.CourseRepository;
@@ -62,11 +64,9 @@ public class CourseService {
 			throw new CourseConflictException("Course code already exists: " + command.courseCode());
 		}
 
-		Map<String, Integer> resolvedPrerequisiteCourseIds = new HashMap<>();
-		if (command.prerequisiteTree() != null) {
-			validatePrerequisiteTree(command.prerequisiteTree(), normalizedNewCourseCode, resolvedPrerequisiteCourseIds);
-			ensureNoIndirectCycle(normalizedNewCourseCode, resolvedPrerequisiteCourseIds.values());
-		}
+		Map<String, Integer> resolvedPrerequisiteCourseIds = validateAndResolvePrerequisiteTree(
+				command.prerequisiteTree(),
+				normalizedNewCourseCode);
 
 		Integer courseId = courseRepository.insertCourse(
 				command.courseCode(),
@@ -82,6 +82,92 @@ public class CourseService {
 
 		return getCourseById(courseId)
 				.orElseThrow(() -> new IllegalStateException("Created course could not be loaded: " + courseId));
+	}
+
+	@Transactional
+	public Optional<CourseModel> updateCourse(Integer courseId, CoursePatchRequestModel request) {
+		Optional<CourseWithRootPrerequisiteModel> existingCourse = courseRepository.findCourseWithRootPrerequisiteById(courseId);
+		if (existingCourse.isEmpty()) {
+			return Optional.empty();
+		}
+
+		CoursePatchCommand command = validateAndNormalizePatchRequest(request);
+		CourseWithRootPrerequisiteModel currentCourse = existingCourse.get();
+
+		String nextCourseCode = command.hasCourseCode() ? command.courseCode() : currentCourse.getCourseCode();
+		String nextCrn = command.hasCrn() ? command.crn() : currentCourse.getCrn();
+		String nextTitle = command.hasTitle() ? command.title() : currentCourse.getTitle();
+		Integer nextCredits = command.hasCredits() ? command.credits() : currentCourse.getCredits();
+		List<String> nextAttributes = command.hasAttributes() ? command.attributes() : currentCourse.getAttributes();
+
+		if (command.hasCourseCode()) {
+			Optional<Integer> existingCourseIdForCode = courseRepository.findCourseIdByCourseCode(nextCourseCode);
+			if (existingCourseIdForCode.isPresent() && !courseId.equals(existingCourseIdForCode.get())) {
+				throw new CourseConflictException("Course code already exists: " + nextCourseCode);
+			}
+		}
+
+		int updatedRows = courseRepository.updateCourseSummaryFields(
+				courseId,
+				nextCourseCode,
+				nextCrn,
+				nextTitle,
+				nextCredits,
+				nextAttributes);
+
+		if (updatedRows == 0) {
+			return Optional.empty();
+		}
+
+		return courseRepository.findCourseWithRootPrerequisiteById(courseId)
+				.map(this::toCourseSummaryModel);
+	}
+
+	@Transactional
+	public Optional<CourseDetailModel> updateCoursePrerequisites(
+			Integer courseId,
+			CoursePrerequisitesUpdateRequestModel request) {
+		Optional<CourseWithRootPrerequisiteModel> existingCourse = courseRepository.findCourseWithRootPrerequisiteById(courseId);
+		if (existingCourse.isEmpty()) {
+			return Optional.empty();
+		}
+
+		PrerequisiteTreeNodeModel nextPrerequisiteTree = validateAndNormalizePrerequisitesUpdateRequest(request);
+		String normalizedCourseCode = normalizeCourseCodeForLookup(existingCourse.get().getCourseCode());
+		Map<String, Integer> resolvedPrerequisiteCourseIds = validateAndResolvePrerequisiteTree(
+				nextPrerequisiteTree,
+				normalizedCourseCode);
+
+		courseRepository.updateCourseRootPrerequisiteNodeId(courseId, null);
+		courseRepository.deletePrerequisiteNodesByCourseId(courseId);
+
+		if (nextPrerequisiteTree != null) {
+			Integer rootNodeId = persistPrerequisiteTree(courseId, nextPrerequisiteTree, resolvedPrerequisiteCourseIds);
+			courseRepository.updateCourseRootPrerequisiteNodeId(courseId, rootNodeId);
+		}
+
+		return getCourseById(courseId);
+	}
+
+	private Map<String, Integer> validateAndResolvePrerequisiteTree(
+			PrerequisiteTreeNodeModel prerequisiteTree,
+			String normalizedCourseCode) {
+		Map<String, Integer> resolvedPrerequisiteCourseIds = new HashMap<>();
+		if (prerequisiteTree != null) {
+			validatePrerequisiteTree(prerequisiteTree, normalizedCourseCode, resolvedPrerequisiteCourseIds);
+			ensureNoIndirectCycle(normalizedCourseCode, resolvedPrerequisiteCourseIds.values());
+		}
+
+		return resolvedPrerequisiteCourseIds;
+	}
+
+	private PrerequisiteTreeNodeModel validateAndNormalizePrerequisitesUpdateRequest(
+			CoursePrerequisitesUpdateRequestModel request) {
+		if (request == null) {
+			throw new CourseValidationException("Request body is required");
+		}
+
+		return request.getPrerequisiteTree();
 	}
 
 	private Integer persistPrerequisiteTree(
@@ -276,6 +362,89 @@ public class CourseService {
 		return value.trim();
 	}
 
+	private CoursePatchCommand validateAndNormalizePatchRequest(CoursePatchRequestModel request) {
+		if (request == null) {
+			throw new CourseValidationException("Request body is required");
+		}
+
+		boolean hasCourseCode = request.getCourseCode() != null;
+		boolean hasCrn = request.getCrn() != null;
+		boolean hasTitle = request.getTitle() != null;
+		boolean hasCredits = request.getCredits() != null;
+		boolean hasAttributes = request.getAttributes() != null;
+
+		if (!hasCourseCode && !hasCrn && !hasTitle && !hasCredits && !hasAttributes) {
+			throw new CourseValidationException("At least one updatable field must be provided");
+		}
+
+		String courseCode = null;
+		if (hasCourseCode) {
+			courseCode = requireTrimmedText(request.getCourseCode(), "course_code");
+		}
+
+		String crn = null;
+		if (hasCrn) {
+			crn = request.getCrn().trim();
+			if (crn.isEmpty()) {
+				crn = null;
+			}
+		}
+
+		String title = null;
+		if (hasTitle) {
+			title = requireTrimmedText(request.getTitle(), "title");
+		}
+
+		Integer credits = null;
+		if (hasCredits) {
+			credits = request.getCredits();
+			if (credits < 0) {
+				throw new CourseValidationException("credits must be >= 0");
+			}
+		}
+
+		List<String> attributes = null;
+		if (hasAttributes) {
+			attributes = validateAndNormalizeAttributes(request.getAttributes(), false);
+		}
+
+		return new CoursePatchCommand(
+				hasCourseCode,
+				courseCode,
+				hasCrn,
+				crn,
+				hasTitle,
+				title,
+				hasCredits,
+				credits,
+				hasAttributes,
+				attributes);
+	}
+
+	private List<String> validateAndNormalizeAttributes(List<String> attributes, boolean defaultToEmpty) {
+		if (attributes == null) {
+			return defaultToEmpty ? List.of() : null;
+		}
+
+		for (String attribute : attributes) {
+			if (attribute == null || attribute.isBlank()) {
+				throw new CourseValidationException("attributes cannot contain null or blank values");
+			}
+		}
+
+		return attributes.stream().map(String::trim).toList();
+	}
+
+	private CourseModel toCourseSummaryModel(CourseWithRootPrerequisiteModel course) {
+		return new CourseModel(
+				course.getCourseId(),
+				course.getCourseCode(),
+				course.getCrn(),
+				course.getTitle(),
+				course.getCredits(),
+				course.getAttributes());
+	}
+
 	private CourseCreateCommand validateAndNormalizeCreateRequest(CourseCreateRequestModel request) {
 		if (request == null) {
 			throw new CourseValidationException("Request body is required");
@@ -300,23 +469,14 @@ public class CourseService {
 			}
 		}
 
-		List<String> attributes = request.getAttributes();
-		if (attributes == null) {
-			attributes = List.of();
-		}
-
-		for (String attribute : attributes) {
-			if (attribute == null || attribute.isBlank()) {
-				throw new CourseValidationException("attributes cannot contain null or blank values");
-			}
-		}
+		List<String> attributes = validateAndNormalizeAttributes(request.getAttributes(), true);
 
 		return new CourseCreateCommand(
 				courseCode,
 				crn,
 				title,
 				request.getCredits(),
-				attributes.stream().map(String::trim).toList(),
+				attributes,
 				request.getPrerequisiteTree());
 	}
 
@@ -327,6 +487,19 @@ public class CourseService {
 			Integer credits,
 			List<String> attributes,
 			PrerequisiteTreeNodeModel prerequisiteTree) {
+	}
+
+	private record CoursePatchCommand(
+			boolean hasCourseCode,
+			String courseCode,
+			boolean hasCrn,
+			String crn,
+			boolean hasTitle,
+			String title,
+			boolean hasCredits,
+			Integer credits,
+			boolean hasAttributes,
+			List<String> attributes) {
 	}
 
 	private PrerequisiteTreeNodeModel buildPrerequisiteTree(Integer nodeId, Set<Integer> recursionPath) {

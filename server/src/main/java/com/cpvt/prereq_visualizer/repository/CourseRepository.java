@@ -187,6 +187,53 @@ public class CourseRepository {
 		jdbcTemplate.update(sql, rootPrerequisiteNodeId, courseId);
 	}
 
+	public int updateCourseSummaryFields(
+			Integer courseId,
+			String courseCode,
+			String crn,
+			String title,
+			Integer credits,
+			List<String> attributes) {
+		final List<String> safeAttributes = attributes == null ? List.of() : attributes;
+
+		return jdbcTemplate.execute((Connection connection) -> {
+			String sql = """
+					UPDATE courses
+					SET course_code = ?,
+						crn = ?,
+						title = ?,
+						credits = ?,
+						attributes = ?
+					WHERE course_id = ?
+					""";
+
+			try (PreparedStatement statement = connection.prepareStatement(sql)) {
+				statement.setString(1, courseCode);
+				statement.setString(2, crn);
+				statement.setString(3, title);
+				statement.setInt(4, credits);
+
+				Array attributesArray = connection.createArrayOf("text", safeAttributes.toArray(String[]::new));
+				try {
+					statement.setArray(5, attributesArray);
+					statement.setInt(6, courseId);
+					return statement.executeUpdate();
+				} finally {
+					attributesArray.free();
+				}
+			}
+		});
+	}
+
+	public void deletePrerequisiteNodesByCourseId(Integer courseId) {
+		String sql = """
+				DELETE FROM prerequisite_nodes
+				WHERE course_id = ?
+				""";
+
+		jdbcTemplate.update(sql, courseId);
+	}
+
 	// Converts Postgres TEXT[] from JDBC into a JSON-friendly List<String>.
 	private List<String> parseTextArray(Array sqlArray) throws SQLException {
 		if (sqlArray == null) {
