@@ -62,3 +62,17 @@ export function createCourse(coursePayload) {
 		body: JSON.stringify(coursePayload),
 	})
 }
+
+export function updateCourse(courseId, coursePayload) {
+	return request(`/api/courses/${courseId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(coursePayload),
+	})
+}
+
+export function updatePrerequisites(courseId, prerequisitesPayload) {
+	return request(`/api/courses/${courseId}/prerequisites`, {
+		method: 'PUT',
+		body: JSON.stringify(prerequisitesPayload),
+	})
+}

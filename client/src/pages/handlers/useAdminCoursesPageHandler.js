@@ -3,6 +3,7 @@ import {
   createAdminCourse,
   loadAdminCourseDetail,
   loadAdminCourses,
+  updateAdminCourse,
 } from '../../services/adminCoursesService'
 import {
   buildPrerequisiteExpression,
@@ -113,6 +114,7 @@ export function useAdminCoursesPageHandler() {
   const [selectedCourseLoading, setSelectedCourseLoading] = useState(false)
   const [selectedCourseError, setSelectedCourseError] = useState('')
   const [courseDetailCache, setCourseDetailCache] = useState({})
+  const [isEditingCourseId, setIsEditingCourseId] = useState(false)
 
   const [isAddCourseMode, setIsAddCourseMode] = useState(false)
   const [addCourseDraft, setAddCourseDraft] = useState(EMPTY_ADD_COURSE_DRAFT)
@@ -244,11 +246,13 @@ export function useAdminCoursesPageHandler() {
   }, [fetchCourses])
 
   const handleOpenAddCourse = useCallback(() => {
+    setIsEditingCourseId(false)
     resetAddCourseDraft()
     setIsAddCourseMode(true)
   }, [resetAddCourseDraft])
 
   const handleCancelAddCourse = useCallback(() => {
+    setIsEditingCourseId(false)
     setIsAddCourseMode(false)
     resetAddCourseDraft()
   }, [resetAddCourseDraft])
@@ -298,11 +302,16 @@ export function useAdminCoursesPageHandler() {
     setAddCourseSubmitError('')
   }, [])
 
-  const handleSaveAddCourse = useCallback(async () => {
+  const handleSaveAddCourse = useCallback(async (isEditingCourseId) => {
     const validationErrors = validateAddCourseDraft(addCourseDraft, addCoursePrerequisiteTree)
     if (validationErrors.length) {
       setAddCourseValidationErrors(validationErrors)
       setAddCourseSubmitError('')
+      return
+    }
+
+    if (isEditingCourseId && (selectedCourseId === null || selectedCourseId === undefined)) {
+      setAddCourseSubmitError('No course selected for editing')
       return
     }
 
@@ -311,7 +320,14 @@ export function useAdminCoursesPageHandler() {
     setAddCourseSubmitError('')
 
     try {
-      const createdCourse = await createAdminCourse(addCourseDraft, addCoursePrerequisiteTree)
+      let createdCourse
+
+      if (!isEditingCourseId) {
+        createdCourse = await createAdminCourse(addCourseDraft, addCoursePrerequisiteTree)
+      } else {
+        createdCourse = await updateAdminCourse(selectedCourseId, addCourseDraft, addCoursePrerequisiteTree)
+      }
+      
       const createdSummary = mapCourseDetailToAdminSummary(createdCourse)
       const createdCacheKey = toComparableId(createdCourse.courseId)
 
@@ -335,11 +351,11 @@ export function useAdminCoursesPageHandler() {
       setIsAddCourseMode(false)
       resetAddCourseDraft()
     } catch (err) {
-      setAddCourseSubmitError(err.message || 'Unable to create course')
+      setAddCourseSubmitError(err.message || (isEditingCourseId ? 'Unable to update course' : 'Unable to create course'))
     } finally {
       setIsSavingCourse(false)
     }
-  }, [addCourseDraft, addCoursePrerequisiteTree, resetAddCourseDraft])
+  }, [addCourseDraft, addCoursePrerequisiteTree, resetAddCourseDraft, selectedCourseId])
 
   const handleSelectCourse = useCallback((courseId) => {
     setSelectedCourseId(courseId)
@@ -377,6 +393,7 @@ export function useAdminCoursesPageHandler() {
       setAddCourseSubmitError('')
       setSelectedCourseId(courseId)
       setIsAddCourseMode(true)
+      setIsEditingCourseId(true)
     } catch (err) {
       setAddCourseSubmitError(err.message || 'Unable to load course for editing')
     }
@@ -390,6 +407,7 @@ export function useAdminCoursesPageHandler() {
     coursesError,
     isRefreshingCourses,
     isAddCourseMode,
+    isEditingCourseId,
     addCourseDraft,
     addCoursePrerequisiteTree,
     addCoursePrerequisiteSummary,

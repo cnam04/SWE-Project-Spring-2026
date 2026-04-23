@@ -14,6 +14,7 @@ export default function AdminPage() {
     coursesError,
     isRefreshingCourses,
     isAddCourseMode,
+    isEditingCourseId,
     addCourseDraft,
     addCoursePrerequisiteTree,
     addCoursePrerequisiteSummary,
@@ -97,9 +98,10 @@ export default function AdminPage() {
                 validationErrors={addCourseValidationErrors}
                 submitError={addCourseSubmitError}
                 isSaving={isSavingCourse}
+                isEditMode={isEditingCourseId}
                 onCancel={handleCancelAddCourse}
                 onDraftChange={handleAddCourseDraftChange}
-                onSave={handleSaveAddCourse}
+                onSave={() => handleSaveAddCourse(isEditingCourseId)}
                 onSetRootType={handleSetPrerequisiteRootType}
                 onClearTree={handleClearPrerequisiteTree}
                 onChangeNodeType={handleChangePrerequisiteNodeType}

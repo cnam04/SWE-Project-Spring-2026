@@ -72,19 +72,11 @@ function AdminCourseDetail({
             <button
               className="button is-light"
               type="button"
-              disabled={!courseMutationsReady}
-              title="Edit Course will be enabled when write endpoints are available."
-            >
-              Edit Course
-            </button>
-            <button
-              className="button is-light"
-              type="button"
               onClick={onEdit}
               //disabled={!courseMutationsReady}
               title="Edit Prerequisites will be enabled when write endpoints are available."
             >
-              Edit Prerequisites
+              Edit Course
             </button>
           </div>
 

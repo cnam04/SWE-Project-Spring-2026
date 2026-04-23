@@ -8,6 +8,7 @@ function AdminAddCoursePanel({
   validationErrors,
   submitError,
   isSaving,
+  isEditMode,
   onCancel,
   onDraftChange,
   onSave,
@@ -17,11 +18,12 @@ function AdminAddCoursePanel({
   onChangeNodeCourse,
   onAddChildNode,
   onRemoveNode,
+
 }) {
   return (
     <section className="box app-surface h-full">
       <div className="is-flex is-align-items-center is-justify-content-space-between is-gap-2 mb-3 is-flex-wrap-wrap">
-        <h2 className="title is-5 mb-0">Add Course</h2>
+        <h2 className="title is-5 mb-0">{isEditMode?  'Edit Course' : 'Add Course'}</h2>
         <button className="button is-light is-small" type="button" onClick={onCancel} disabled={isSaving}>
           Cancel
         </button>
@@ -140,7 +142,7 @@ function AdminAddCoursePanel({
           {isSaving ? 'Saving...' : 'Save Course'}
         </button>
         <button className="button is-light" type="button" onClick={onCancel} disabled={isSaving}>
-          Cancel Add Course
+          {isEditMode ? 'Cancel Edit Course' : 'Cancel Add Course'}
         </button>
       </div>
     </section>
