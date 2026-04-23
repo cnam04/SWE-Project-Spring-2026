@@ -68,13 +68,13 @@ function PrerequisiteNodeEditor({
         <>
           <div className="buttons are-small mb-2 mt-2">
             <button className="button is-light" type="button" onClick={() => onAddChildNode(path, 'COURSE')}>
-              Add COURSE Child
+              COURSE Child
             </button>
             <button className="button is-light" type="button" onClick={() => onAddChildNode(path, 'AND')}>
-              Add AND Child
+              AND Child
             </button>
             <button className="button is-light" type="button" onClick={() => onAddChildNode(path, 'OR')}>
-              Add OR Child
+              OR Child
             </button>
           </div>
 

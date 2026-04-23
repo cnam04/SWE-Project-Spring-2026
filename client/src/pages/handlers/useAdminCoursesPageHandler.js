@@ -358,6 +358,30 @@ export function useAdminCoursesPageHandler() {
     fetchSelectedCourseDetail(selectedCourseId, true)
   }, [fetchSelectedCourseDetail, selectedCourseId])
 
+  const handleEditSelectedCourse = useCallback(async (courseId) =>{
+    try {
+      const courseToEdit = await loadAdminCourseDetail(courseId)
+
+      setAddCourseDraft({
+        courseCode: courseToEdit.courseCode ?? '',
+        crn: courseToEdit.crn ?? '',
+        title: courseToEdit.title ?? '',
+        credits: String(courseToEdit.credits ?? ''),
+        attributesText: Array.isArray(courseToEdit.attributes)
+          ? courseToEdit.attributes.join(', ')
+          : '',
+      })
+
+      setAddCoursePrerequisiteTree(courseToEdit.prerequisiteTree ?? null)
+      setAddCourseValidationErrors([])
+      setAddCourseSubmitError('')
+      setSelectedCourseId(courseId)
+      setIsAddCourseMode(true)
+    } catch (err) {
+      setAddCourseSubmitError(err.message || 'Unable to load course for editing')
+    }
+  }, [])
+
   return {
     allCoursesCount: courses.length,
     allCourses: courses,
@@ -398,5 +422,6 @@ export function useAdminCoursesPageHandler() {
     handleSelectCourse,
     handleClearCourseSelection,
     handleRetrySelectedCourse,
+    handleEditSelectedCourse,
   }
 }

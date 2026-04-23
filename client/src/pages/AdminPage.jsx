@@ -46,6 +46,7 @@ export default function AdminPage() {
     handleSelectCourse,
     handleClearCourseSelection,
     handleRetrySelectedCourse,
+    handleEditSelectedCourse,
   } = useAdminCoursesPageHandler()
 
   return (
@@ -114,6 +115,7 @@ export default function AdminPage() {
                 courseMutationsReady={courseMutationsReady}
                 onRetry={handleRetrySelectedCourse}
                 onClearSelection={handleClearCourseSelection}
+                onEdit={() => handleEditSelectedCourse(selectedCourseId)}
               />
             )}
           </main>

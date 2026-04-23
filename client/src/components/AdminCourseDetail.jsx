@@ -15,6 +15,7 @@ function AdminCourseDetail({
   courseMutationsReady,
   onRetry,
   onClearSelection,
+  onEdit,
 }) {
   return (
     <section className="box app-surface h-full">
@@ -79,7 +80,8 @@ function AdminCourseDetail({
             <button
               className="button is-light"
               type="button"
-              disabled={!courseMutationsReady}
+              onClick={onEdit}
+              //disabled={!courseMutationsReady}
               title="Edit Prerequisites will be enabled when write endpoints are available."
             >
               Edit Prerequisites

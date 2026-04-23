@@ -21,6 +21,7 @@ export async function loadAdminCourseDetail(courseId) {
 
 export async function createAdminCourse(draftCourse, prerequisiteTree) {
   const requestPayload = mapCreateCourseDraftToRequest(draftCourse, prerequisiteTree)
+  // call POST /api/courses with the request payload, get back the created course, and map it for admin detail view
   const rawCreatedCourse = await createCourse(requestPayload)
   return mapCourseDetailForAdmin(rawCreatedCourse)
 }
