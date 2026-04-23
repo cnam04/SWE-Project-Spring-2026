@@ -26,3 +26,11 @@ async function request(path, options = {}) {
 export function getTestItems() {
 	return request('/api/test-items', { method: 'GET' })
 }
+
+export function getCourses() {
+	return request('/api/courses', { method: 'GET' })
+}
+
+export function getCourseById(courseId) {
+	return request(`/api/courses/${courseId}`, { method: 'GET' })
+}
