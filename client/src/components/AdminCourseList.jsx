@@ -120,7 +120,7 @@ function AdminCourseList({
                   <p className="is-size-7 has-text-grey mb-1">{renderCourseSubtitle(course)}</p>
                   <div className="tags are-small mb-0">
                     <span className="tag is-light">{course.courseCode || 'No code'}</span>
-                    {course.attributes.slice(0, 2).map((attribute) => (
+                    {(Array.isArray(course.attributes) ? course.attributes : []).slice(0, 2).map((attribute) => (
                       <span key={`${course.courseId}-${attribute}`} className="tag is-info is-light">
                         {attribute}
                       </span>

@@ -1,8 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import '../styles/Navbar.css';
+import { getAdminAccessState } from '../services/utils/adminAccess';
 
 export default function Navbar() {
+  const { isKnown, isAdmin } = getAdminAccessState();
+
   return (
     <header className="app-navbar">
       <div className="container is-app">
@@ -15,12 +18,14 @@ export default function Navbar() {
             >
               DB Health Check
             </NavLink>
-            <NavLink
-              to="/admin"
-              className={({ isActive }) => `button is-light ${isActive ? 'is-link is-selected' : ''}`}
-            >
-              Admin
-            </NavLink>
+            {(!isKnown || isAdmin) ? (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) => `button is-light ${isActive ? 'is-link is-selected' : ''}`}
+              >
+                Admin
+              </NavLink>
+            ) : null}
             <NavLink
               to="/prereq-vis"
               className={({ isActive }) => `button is-light ${isActive ? 'is-link is-selected' : ''}`}

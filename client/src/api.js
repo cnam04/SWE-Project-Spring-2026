@@ -48,6 +48,14 @@ export function getTestItems() {
 	return request('/api/test-items', { method: 'GET' })
 }
 
+export function getUsers() {
+	return request('/api/users', { method: 'GET' })
+}
+
+export function getUserById(userId) {
+	return request(`/api/users/${userId}`, { method: 'GET' })
+}
+
 export function getCourses() {
 	return request('/api/courses', { method: 'GET' })
 }

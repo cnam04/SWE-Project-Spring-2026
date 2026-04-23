@@ -15,7 +15,8 @@ function AdminCourseDetail({
   courseMutationsReady,
   onRetry,
   onClearSelection,
-  onEdit,
+  onEditCourse,
+  onEditPrerequisites,
 }) {
   return (
     <section className="box app-surface h-full">
@@ -72,11 +73,20 @@ function AdminCourseDetail({
             <button
               className="button is-light"
               type="button"
-              onClick={onEdit}
+              onClick={onEditCourse}
               //disabled={!courseMutationsReady}
-              title="Edit Prerequisites will be enabled when write endpoints are available."
+              title="Edit the selected course information."
             >
               Edit Course
+            </button>
+            <button
+              className="button is-light"
+              type="button"
+              onClick={onEditPrerequisites}
+              //disabled={!courseMutationsReady}
+              title="Edit the selected course prerequisite tree."
+            >
+              Edit Prerequisites
             </button>
           </div>
 

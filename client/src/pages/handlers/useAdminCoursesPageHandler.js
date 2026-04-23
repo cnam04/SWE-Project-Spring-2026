@@ -399,6 +399,10 @@ export function useAdminCoursesPageHandler() {
     }
   }, [])
 
+  const handleEditSelectedPrerequisites = useCallback((courseId) => {
+    handleEditSelectedCourse(courseId)
+  }, [handleEditSelectedCourse])
+
   return {
     allCoursesCount: courses.length,
     allCourses: courses,
@@ -441,5 +445,6 @@ export function useAdminCoursesPageHandler() {
     handleClearCourseSelection,
     handleRetrySelectedCourse,
     handleEditSelectedCourse,
+    handleEditSelectedPrerequisites,
   }
 }
