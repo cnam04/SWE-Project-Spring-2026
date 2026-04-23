@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cpvt.prereq_visualizer.model.StudentCourseRecordCreateRequestModel;
+import com.cpvt.prereq_visualizer.model.StudentCourseRecordModel;
+import com.cpvt.prereq_visualizer.model.StudentCourseRecordPatchRequestModel;
+import com.cpvt.prereq_visualizer.model.CourseWithRootPrerequisiteModel;
 import com.cpvt.prereq_visualizer.model.StudentCreateRequestModel;
 import com.cpvt.prereq_visualizer.model.StudentModel;
 import com.cpvt.prereq_visualizer.model.StudentPatchRequestModel;
 import com.cpvt.prereq_visualizer.model.UserDetailModel;
 import com.cpvt.prereq_visualizer.model.UserStudentModel;
+import com.cpvt.prereq_visualizer.repository.CourseRepository;
 import com.cpvt.prereq_visualizer.repository.StudentRepository;
 import com.cpvt.prereq_visualizer.repository.UserRepository;
 
@@ -35,6 +41,9 @@ class StudentServiceTest {
 
 	@Mock
 	private UserRepository userRepository;
+
+	@Mock
+	private CourseRepository courseRepository;
 
 	@InjectMocks
 	private StudentService studentService;
@@ -259,5 +268,131 @@ class StudentServiceTest {
 		assertEquals(2, result.getStudentId());
 		assertEquals("NP100333", result.getSchoolStudentId());
 		assertEquals("Software Engineering", result.getMajor());
+	}
+
+	@Test
+	void getStudentCourseRecords_whenStudentMissing_returnsEmpty() {
+		when(studentRepository.findStudentById(999)).thenReturn(Optional.empty());
+
+		Optional<List<StudentCourseRecordModel>> result = studentService.getStudentCourseRecords(999);
+
+		assertTrue(result.isEmpty());
+		verify(studentRepository, never()).findStudentCourseRecordsByStudentId(999);
+	}
+
+	@Test
+	void createStudentCourseRecord_whenDuplicateCourseRecord_throwsConflict() {
+		when(studentRepository.findStudentById(1)).thenReturn(Optional.of(
+				new StudentModel(1, 1, "Cole Nam", "cole@example.com", "NP100001", "Computer Science")));
+		when(courseRepository.findCourseWithRootPrerequisiteById(9)).thenReturn(Optional.of(
+				new CourseWithRootPrerequisiteModel(
+						9,
+						"CPS320",
+						"10009",
+						"Database Systems",
+						3,
+						List.of("Advanced Core"),
+						null)));
+		when(studentRepository.findRecordIdByStudentIdAndCourseId(1, 9)).thenReturn(Optional.of(8));
+
+		StudentCourseRecordCreateRequestModel request = new StudentCourseRecordCreateRequestModel(
+				9,
+				"planned",
+				null,
+				"Fall",
+				2026);
+
+		StudentConflictException exception = assertThrows(
+				StudentConflictException.class,
+				() -> studentService.createStudentCourseRecord(1, request));
+
+		assertEquals("Student already has a record for course_id: 9", exception.getMessage());
+		verify(studentRepository, never()).insertStudentCourseRecord(anyInt(), anyInt(), anyString(), anyString(), anyString(), anyInt());
+	}
+
+	@Test
+	void createStudentCourseRecord_withValidRequest_createsRecord() {
+		StudentCourseRecordModel createdRecord = new StudentCourseRecordModel(
+				9,
+				1,
+				10,
+				"CPS330",
+				"10010",
+				"Operating Systems",
+				3,
+				List.of("Advanced Core"),
+				"planned",
+				null,
+				"Fall",
+				2026);
+
+		when(studentRepository.findStudentById(1)).thenReturn(Optional.of(
+				new StudentModel(1, 1, "Cole Nam", "cole@example.com", "NP100001", "Computer Science")));
+		when(courseRepository.findCourseWithRootPrerequisiteById(10)).thenReturn(Optional.of(
+				new CourseWithRootPrerequisiteModel(
+						10,
+						"CPS330",
+						"10010",
+						"Operating Systems",
+						3,
+						List.of("Advanced Core"),
+						null)));
+		when(studentRepository.findRecordIdByStudentIdAndCourseId(1, 10)).thenReturn(Optional.empty());
+		when(studentRepository.insertStudentCourseRecord(1, 10, "planned", null, "Fall", 2026)).thenReturn(9);
+		when(studentRepository.findStudentCourseRecordById(1, 9)).thenReturn(Optional.of(createdRecord));
+
+		StudentCourseRecordCreateRequestModel request = new StudentCourseRecordCreateRequestModel(
+				10,
+				"planned",
+				null,
+				"Fall",
+				2026);
+
+		StudentCourseRecordModel result = studentService.createStudentCourseRecord(1, request).orElseThrow();
+
+		assertEquals(9, result.getRecordId());
+		assertEquals(10, result.getCourseId());
+		assertEquals("planned", result.getStatus());
+	}
+
+	@Test
+	void updateStudentCourseRecord_whenStatusChangesWithoutClearingGrade_throwsValidation() {
+		StudentCourseRecordModel existingRecord = new StudentCourseRecordModel(
+				7,
+				1,
+				6,
+				"CPS210",
+				"10006",
+				"Data Structures",
+				4,
+				List.of("Core"),
+				"completed",
+				"A",
+				"Fall",
+				2025);
+
+		when(studentRepository.findStudentById(1)).thenReturn(Optional.of(
+				new StudentModel(1, 1, "Cole Nam", "cole@example.com", "NP100001", "Computer Science")));
+		when(studentRepository.findStudentCourseRecordById(1, 7)).thenReturn(Optional.of(existingRecord));
+
+		StudentCourseRecordPatchRequestModel patchRequest = new StudentCourseRecordPatchRequestModel();
+		patchRequest.setStatus("planned");
+
+		StudentValidationException exception = assertThrows(
+				StudentValidationException.class,
+				() -> studentService.updateStudentCourseRecord(1, 7, patchRequest));
+
+		assertEquals("grade must be null unless status is completed", exception.getMessage());
+		verify(studentRepository, never()).updateStudentCourseRecord(anyInt(), anyInt(), anyString(), anyString(), anyString(), anyInt());
+	}
+
+	@Test
+	void deleteStudentCourseRecord_whenStudentMissing_returnsFalse() {
+		when(studentRepository.findStudentById(999)).thenReturn(Optional.empty());
+
+		boolean deleted = studentService.deleteStudentCourseRecord(999, 42);
+
+		assertFalse(deleted);
+		verify(studentRepository, never()).deleteStudentCourseRecord(anyInt(), anyInt());
 	}
 }

@@ -1,7 +1,9 @@
 package com.cpvt.prereq_visualizer.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -13,20 +15,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cpvt.prereq_visualizer.model.CourseCreateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphEdgeModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphNodeModel;
 import com.cpvt.prereq_visualizer.model.CourseModel;
 import com.cpvt.prereq_visualizer.model.CoursePatchRequestModel;
 import com.cpvt.prereq_visualizer.model.CoursePrerequisitesUpdateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseWithRootPrerequisiteModel;
+import com.cpvt.prereq_visualizer.model.PrerequisiteGraphNodeSourceModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
 import com.cpvt.prereq_visualizer.repository.CourseRepository;
+import com.cpvt.prereq_visualizer.repository.StudentRepository;
 
 @Service
 public class CourseService {
 
 	private final CourseRepository courseRepository;
+	private final StudentRepository studentRepository;
 
-	public CourseService(CourseRepository courseRepository) {
+	public CourseService(CourseRepository courseRepository, StudentRepository studentRepository) {
 		this.courseRepository = courseRepository;
+		this.studentRepository = studentRepository;
 	}
 
 	// Kept as a service boundary so validation/business rules can be added later.
@@ -53,6 +62,72 @@ public class CourseService {
 				prerequisiteTree);
 
 		return Optional.of(detail);
+	}
+
+	public Optional<CourseGraphModel> getCourseGraph(Integer courseId, Integer studentId) {
+		Integer normalizedCourseId = requirePositiveId(courseId, "course_id");
+
+		Optional<CourseWithRootPrerequisiteModel> existingCourse = courseRepository
+				.findCourseWithRootPrerequisiteById(normalizedCourseId);
+		if (existingCourse.isEmpty()) {
+			return Optional.empty();
+		}
+
+		Integer normalizedStudentId = null;
+		if (studentId != null) {
+			normalizedStudentId = requirePositiveId(studentId, "studentId");
+			if (studentRepository.findStudentById(normalizedStudentId).isEmpty()) {
+				throw new CourseValidationException("Referenced student not found: " + normalizedStudentId);
+			}
+		}
+
+		CourseWithRootPrerequisiteModel course = existingCourse.get();
+		GraphBuildContext context = new GraphBuildContext();
+
+		String rootCourseNodeId = buildCourseNodeId(course.getCourseId(), course.getCourseCode());
+		context.upsertCourseNode(
+				rootCourseNodeId,
+				course.getCourseId(),
+				course.getCourseCode(),
+				course.getTitle(),
+				0);
+
+		Integer rootPrerequisiteNodeId = course.getRootPrerequisiteNodeId();
+		if (rootPrerequisiteNodeId != null) {
+			String prerequisiteRootGraphNodeId = buildGraphNodeFromPrerequisiteNode(
+					rootPrerequisiteNodeId,
+					context,
+					new HashSet<>(),
+					1);
+			context.addEdge(rootCourseNodeId, prerequisiteRootGraphNodeId);
+		}
+
+		if (normalizedStudentId != null) {
+			Map<Integer, String> statusByCourseId = courseRepository.findStudentCourseStatuses(
+					normalizedStudentId,
+					context.getCourseIds());
+
+			for (CourseGraphNodeModel node : context.getNodes()) {
+				if ("course".equals(node.getType()) && node.getCourseId() != null) {
+					node.setStatus(statusByCourseId.getOrDefault(node.getCourseId(), "not_taken"));
+				}
+			}
+		} else {
+			for (CourseGraphNodeModel node : context.getNodes()) {
+				if ("course".equals(node.getType())) {
+					node.setStatus("unknown");
+				}
+			}
+		}
+
+		CourseGraphModel graph = new CourseGraphModel(
+				course.getCourseId(),
+				course.getCourseCode(),
+				normalizedStudentId,
+				context.getNodes(),
+				context.getEdges());
+
+		return Optional.of(graph);
 	}
 
 	@Transactional
@@ -354,6 +429,18 @@ public class CourseService {
 		return requireTrimmedText(courseCode, "course_code").toUpperCase(Locale.ROOT);
 	}
 
+	private Integer requirePositiveId(Integer value, String fieldName) {
+		if (value == null) {
+			throw new CourseValidationException(fieldName + " is required");
+		}
+
+		if (value <= 0) {
+			throw new CourseValidationException(fieldName + " must be positive");
+		}
+
+		return value;
+	}
+
 	private String requireTrimmedText(String value, String fieldName) {
 		if (value == null || value.isBlank()) {
 			throw new CourseValidationException(fieldName + " is required");
@@ -500,6 +587,124 @@ public class CourseService {
 			Integer credits,
 			boolean hasAttributes,
 			List<String> attributes) {
+	}
+
+	private String buildGraphNodeFromPrerequisiteNode(
+			Integer nodeId,
+			GraphBuildContext context,
+			Set<Integer> recursionPath,
+			int depth) {
+		if (!recursionPath.add(nodeId)) {
+			throw new IllegalStateException("Cycle detected in prerequisite tree at node " + nodeId);
+		}
+
+		try {
+			PrerequisiteGraphNodeSourceModel sourceNode = courseRepository.findPrerequisiteGraphNodeById(nodeId)
+					.orElseThrow(() -> new IllegalStateException("Prerequisite node not found: " + nodeId));
+
+			String nodeType = normalizeNodeType(sourceNode.getNodeType());
+			if ("COURSE".equals(nodeType)) {
+				if (sourceNode.getRequiredCourseId() == null) {
+					throw new IllegalStateException("COURSE prerequisite node missing required_course_id: " + nodeId);
+				}
+
+				String courseNodeId = buildCourseNodeId(
+						sourceNode.getRequiredCourseId(),
+						sourceNode.getRequiredCourseCode());
+				context.upsertCourseNode(
+						courseNodeId,
+						sourceNode.getRequiredCourseId(),
+						sourceNode.getRequiredCourseCode(),
+						sourceNode.getRequiredCourseTitle(),
+						depth);
+
+				return courseNodeId;
+			}
+
+			String operatorNodeId = context.createOperatorNode(nodeType, depth);
+			for (Integer childNodeId : courseRepository.findChildNodeIds(nodeId)) {
+				String childGraphNodeId = buildGraphNodeFromPrerequisiteNode(
+						childNodeId,
+						context,
+						recursionPath,
+						depth + 1);
+				context.addEdge(operatorNodeId, childGraphNodeId);
+			}
+
+			return operatorNodeId;
+		} finally {
+			recursionPath.remove(nodeId);
+		}
+	}
+
+	private String buildCourseNodeId(Integer courseId, String courseCode) {
+		if (courseCode != null && !courseCode.isBlank()) {
+			return "course-" + normalizeCourseCodeForLookup(courseCode);
+		}
+
+		if (courseId != null) {
+			return "course-id-" + courseId;
+		}
+
+		throw new IllegalStateException("Cannot build graph node id without course identity");
+	}
+
+	private static final class GraphBuildContext {
+
+		private final Map<String, CourseGraphNodeModel> nodesById = new LinkedHashMap<>();
+		private final List<CourseGraphEdgeModel> edges = new ArrayList<>();
+		private int operatorCounter;
+
+		void upsertCourseNode(
+				String nodeId,
+				Integer courseId,
+				String courseCode,
+				String title,
+				Integer depth) {
+			CourseGraphNodeModel existingNode = nodesById.get(nodeId);
+			if (existingNode == null) {
+				nodesById.put(nodeId, new CourseGraphNodeModel(
+						nodeId,
+						"course",
+						courseId,
+						courseCode,
+						title,
+						null,
+						depth));
+				return;
+			}
+
+			if (existingNode.getDepth() == null || depth < existingNode.getDepth()) {
+				existingNode.setDepth(depth);
+			}
+		}
+
+		String createOperatorNode(String nodeType, Integer depth) {
+			operatorCounter++;
+			String nodeId = "op-" + operatorCounter;
+			nodesById.put(nodeId, new CourseGraphNodeModel(nodeId, nodeType, null, null, null, null, depth));
+			return nodeId;
+		}
+
+		void addEdge(String source, String target) {
+			edges.add(new CourseGraphEdgeModel(source, target));
+		}
+
+		List<Integer> getCourseIds() {
+			return nodesById.values().stream()
+					.filter(node -> "course".equals(node.getType()))
+					.map(CourseGraphNodeModel::getCourseId)
+					.filter(courseId -> courseId != null)
+					.toList();
+		}
+
+		List<CourseGraphNodeModel> getNodes() {
+			return new ArrayList<>(nodesById.values());
+		}
+
+		List<CourseGraphEdgeModel> getEdges() {
+			return List.copyOf(edges);
+		}
 	}
 
 	private PrerequisiteTreeNodeModel buildPrerequisiteTree(Integer nodeId, Set<Integer> recursionPath) {

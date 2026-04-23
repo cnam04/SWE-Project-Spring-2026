@@ -13,12 +13,14 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cpvt.prereq_visualizer.model.StudentCourseRecordModel;
 import com.cpvt.prereq_visualizer.model.StudentModel;
 import com.cpvt.prereq_visualizer.service.StudentConflictException;
 import com.cpvt.prereq_visualizer.service.StudentService;
@@ -222,5 +224,116 @@ class StudentControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(requestBody))
 				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void getStudentCourseRecords_returnsRecords() throws Exception {
+		StudentCourseRecordModel record = new StudentCourseRecordModel(
+				8,
+				1,
+				9,
+				"CPS320",
+				"10009",
+				"Database Systems",
+				3,
+				List.of("Advanced Core"),
+				"planned",
+				null,
+				"Fall",
+				2026);
+
+		when(studentService.getStudentCourseRecords(1)).thenReturn(Optional.of(List.of(record)));
+
+		mockMvc.perform(get("/api/students/1/records"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].record_id").value(8))
+				.andExpect(jsonPath("$[0].course_id").value(9))
+				.andExpect(jsonPath("$[0].course_code").value("CPS320"))
+				.andExpect(jsonPath("$[0].status").value("planned"));
+	}
+
+	@Test
+	void getStudentCourseRecords_whenStudentMissing_returns404() throws Exception {
+		when(studentService.getStudentCourseRecords(999)).thenReturn(Optional.empty());
+
+		mockMvc.perform(get("/api/students/999/records"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void createStudentCourseRecord_returnsCreatedRecord() throws Exception {
+		StudentCourseRecordModel created = new StudentCourseRecordModel(
+				9,
+				1,
+				10,
+				"CPS330",
+				"10010",
+				"Operating Systems",
+				3,
+				List.of("Advanced Core"),
+				"planned",
+				null,
+				"Fall",
+				2026);
+
+		when(studentService.createStudentCourseRecord(eq(1), any())).thenReturn(Optional.of(created));
+
+		String requestBody = """
+				{
+				  "course_id": 10,
+				  "status": "planned",
+				  "semester_taken": "Fall",
+				  "year_taken": 2026
+				}
+				""";
+
+		mockMvc.perform(post("/api/students/1/records")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.record_id").value(9))
+				.andExpect(jsonPath("$.course_code").value("CPS330"));
+	}
+
+	@Test
+	void updateStudentCourseRecord_returnsUpdatedRecord() throws Exception {
+		StudentCourseRecordModel updated = new StudentCourseRecordModel(
+				7,
+				1,
+				6,
+				"CPS210",
+				"10006",
+				"Data Structures",
+				4,
+				List.of("Core"),
+				"completed",
+				"A",
+				"Spring",
+				2026);
+
+		when(studentService.updateStudentCourseRecord(eq(1), eq(7), any())).thenReturn(Optional.of(updated));
+
+		String requestBody = """
+				{
+				  "status": "completed",
+				  "grade": "A"
+				}
+				""";
+
+		mockMvc.perform(patch("/api/students/1/records/7")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.record_id").value(7))
+				.andExpect(jsonPath("$.status").value("completed"))
+				.andExpect(jsonPath("$.grade").value("A"));
+	}
+
+	@Test
+	void deleteStudentCourseRecord_returnsNoContent() throws Exception {
+		when(studentService.deleteStudentCourseRecord(1, 8)).thenReturn(true);
+
+		mockMvc.perform(delete("/api/students/1/records/8"))
+				.andExpect(status().isNoContent());
 	}
 }

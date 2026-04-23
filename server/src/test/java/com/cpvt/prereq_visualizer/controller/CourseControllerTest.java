@@ -19,6 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphEdgeModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphNodeModel;
 import com.cpvt.prereq_visualizer.model.CourseModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
 import com.cpvt.prereq_visualizer.service.CourseConflictException;
@@ -299,6 +302,58 @@ class CourseControllerTest {
 		mockMvc.perform(put("/api/courses/12/prerequisites")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(requestBody))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void getCourseGraph_returnsGraphDto() throws Exception {
+		CourseGraphModel graph = new CourseGraphModel(
+				12,
+				"CPS410",
+				null,
+				List.of(
+						new CourseGraphNodeModel("course-CPS410", "course", 12, "CPS410", "Advanced Topics in CS", null, 0),
+						new CourseGraphNodeModel("op-1", "OR", null, null, null, null, 1),
+						new CourseGraphNodeModel("course-CPS330", "course", 10, "CPS330", "Operating Systems", null, 2)),
+				List.of(
+						new CourseGraphEdgeModel("course-CPS410", "op-1"),
+						new CourseGraphEdgeModel("op-1", "course-CPS330")));
+
+		when(courseService.getCourseGraph(12, null)).thenReturn(Optional.of(graph));
+
+		mockMvc.perform(get("/api/courses/12/graph"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.courseId").value(12))
+				.andExpect(jsonPath("$.courseCode").value("CPS410"))
+				.andExpect(jsonPath("$.nodes[0].id").value("course-CPS410"))
+				.andExpect(jsonPath("$.edges[0].source").value("course-CPS410"));
+	}
+
+	@Test
+	void getCourseGraph_withStudentId_returnsStudentStatuses() throws Exception {
+		CourseGraphModel graph = new CourseGraphModel(
+				12,
+				"CPS410",
+				1,
+				List.of(
+						new CourseGraphNodeModel("course-CPS410", "course", 12, "CPS410", "Advanced Topics in CS", "not_taken", 0),
+						new CourseGraphNodeModel("course-CPS320", "course", 9, "CPS320", "Database Systems", "planned", 1)),
+				List.of());
+
+		when(courseService.getCourseGraph(12, 1)).thenReturn(Optional.of(graph));
+
+		mockMvc.perform(get("/api/courses/12/graph").param("studentId", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.studentId").value(1))
+				.andExpect(jsonPath("$.nodes[1].status").value("planned"));
+	}
+
+	@Test
+	void getCourseGraph_whenValidationFails_returns400() throws Exception {
+		when(courseService.getCourseGraph(12, 999))
+				.thenThrow(new CourseValidationException("Referenced student not found: 999"));
+
+		mockMvc.perform(get("/api/courses/12/graph").param("studentId", "999"))
 				.andExpect(status().isBadRequest());
 	}
 }

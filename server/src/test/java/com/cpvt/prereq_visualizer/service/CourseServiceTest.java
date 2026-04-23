@@ -1,6 +1,7 @@
 package com.cpvt.prereq_visualizer.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -24,18 +26,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.cpvt.prereq_visualizer.model.CourseCreateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphModel;
 import com.cpvt.prereq_visualizer.model.CourseModel;
 import com.cpvt.prereq_visualizer.model.CoursePatchRequestModel;
 import com.cpvt.prereq_visualizer.model.CoursePrerequisitesUpdateRequestModel;
 import com.cpvt.prereq_visualizer.model.CourseWithRootPrerequisiteModel;
+import com.cpvt.prereq_visualizer.model.PrerequisiteGraphNodeSourceModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
+import com.cpvt.prereq_visualizer.model.StudentModel;
 import com.cpvt.prereq_visualizer.repository.CourseRepository;
+import com.cpvt.prereq_visualizer.repository.StudentRepository;
 
 @ExtendWith(MockitoExtension.class)
 class CourseServiceTest {
 
 	@Mock
 	private CourseRepository courseRepository;
+
+	@Mock
+	private StudentRepository studentRepository;
 
 	@InjectMocks
 	private CourseService courseService;
@@ -418,5 +427,82 @@ class CourseServiceTest {
 		inOrder.verify(courseRepository).deletePrerequisiteNodesByCourseId(12);
 		inOrder.verify(courseRepository).insertPrerequisiteNode(12, "COURSE", 10);
 		inOrder.verify(courseRepository).updateCourseRootPrerequisiteNodeId(12, 300);
+	}
+
+	@Test
+	void getCourseGraph_withoutStudentId_buildsGraphNodesAndEdges() {
+		when(courseRepository.findCourseWithRootPrerequisiteById(12)).thenReturn(Optional.of(
+				new CourseWithRootPrerequisiteModel(
+						12,
+						"CPS410",
+						"10012",
+						"Advanced Topics in CS",
+						3,
+						List.of("Capstone Track"),
+						12)));
+		when(courseRepository.findPrerequisiteGraphNodeById(12)).thenReturn(Optional.of(
+				new PrerequisiteGraphNodeSourceModel(12, "OR", null, null, null)));
+		when(courseRepository.findChildNodeIds(12)).thenReturn(List.of(14));
+		when(courseRepository.findPrerequisiteGraphNodeById(14)).thenReturn(Optional.of(
+				new PrerequisiteGraphNodeSourceModel(14, "COURSE", 6, "CPS210", "Data Structures")));
+
+		CourseGraphModel graph = courseService.getCourseGraph(12, null).orElseThrow();
+
+		assertEquals(12, graph.getCourseId());
+		assertEquals("CPS410", graph.getCourseCode());
+		assertEquals(3, graph.getNodes().size());
+		assertEquals(2, graph.getEdges().size());
+		assertEquals("course", graph.getNodes().get(0).getType());
+		assertEquals("OR", graph.getNodes().get(1).getType());
+		assertEquals("course", graph.getNodes().get(2).getType());
+		assertEquals("unknown", graph.getNodes().get(0).getStatus());
+		assertEquals("unknown", graph.getNodes().get(2).getStatus());
+	}
+
+	@Test
+	void getCourseGraph_withStudentId_appliesCourseStatuses() {
+		when(courseRepository.findCourseWithRootPrerequisiteById(12)).thenReturn(Optional.of(
+				new CourseWithRootPrerequisiteModel(
+						12,
+						"CPS410",
+						"10012",
+						"Advanced Topics in CS",
+						3,
+						List.of("Capstone Track"),
+						12)));
+		when(studentRepository.findStudentById(1)).thenReturn(Optional.of(
+				new StudentModel(1, 1, "Cole Nam", "cole@example.com", "NP100001", "Computer Science")));
+		when(courseRepository.findPrerequisiteGraphNodeById(12)).thenReturn(Optional.of(
+				new PrerequisiteGraphNodeSourceModel(12, "OR", null, null, null)));
+		when(courseRepository.findChildNodeIds(12)).thenReturn(List.of(14));
+		when(courseRepository.findPrerequisiteGraphNodeById(14)).thenReturn(Optional.of(
+				new PrerequisiteGraphNodeSourceModel(14, "COURSE", 6, "CPS210", "Data Structures")));
+		when(courseRepository.findStudentCourseStatuses(eq(1), anyList())).thenReturn(Map.of(6, "in_progress"));
+
+		CourseGraphModel graph = courseService.getCourseGraph(12, 1).orElseThrow();
+
+		assertEquals(1, graph.getStudentId());
+		assertEquals("not_taken", graph.getNodes().get(0).getStatus());
+		assertEquals("in_progress", graph.getNodes().get(2).getStatus());
+	}
+
+	@Test
+	void getCourseGraph_whenStudentIdIsUnknown_throwsValidation() {
+		when(courseRepository.findCourseWithRootPrerequisiteById(12)).thenReturn(Optional.of(
+				new CourseWithRootPrerequisiteModel(
+						12,
+						"CPS410",
+						"10012",
+						"Advanced Topics in CS",
+						3,
+						List.of("Capstone Track"),
+						null)));
+		when(studentRepository.findStudentById(999)).thenReturn(Optional.empty());
+
+		CourseValidationException exception = assertThrows(
+				CourseValidationException.class,
+				() -> courseService.getCourseGraph(12, 999));
+
+		assertEquals("Referenced student not found: 999", exception.getMessage());
 	}
 }

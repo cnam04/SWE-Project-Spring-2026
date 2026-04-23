@@ -6,7 +6,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import com.cpvt.prereq_visualizer.model.CourseModel;
 import com.cpvt.prereq_visualizer.model.CourseWithRootPrerequisiteModel;
+import com.cpvt.prereq_visualizer.model.PrerequisiteGraphNodeSourceModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
 
 @Repository
@@ -87,6 +90,31 @@ public class CourseRepository {
 
 			return node;
 		}, nodeId);
+
+		return nodes.stream().findFirst();
+	}
+
+	public Optional<PrerequisiteGraphNodeSourceModel> findPrerequisiteGraphNodeById(Integer nodeId) {
+		String nodeSql = """
+				SELECT
+					pn.node_id,
+					pn.node_type,
+					pn.required_course_id,
+					required_course.course_code AS required_course_code,
+					required_course.title AS required_course_title
+				FROM prerequisite_nodes pn
+				LEFT JOIN courses required_course ON required_course.course_id = pn.required_course_id
+				WHERE pn.node_id = ?
+				""";
+
+		List<PrerequisiteGraphNodeSourceModel> nodes = jdbcTemplate.query(nodeSql, (rs, rowNum) ->
+				new PrerequisiteGraphNodeSourceModel(
+						rs.getInt("node_id"),
+						rs.getString("node_type"),
+						(Integer) rs.getObject("required_course_id"),
+						rs.getString("required_course_code"),
+						rs.getString("required_course_title")),
+				nodeId);
 
 		return nodes.stream().findFirst();
 	}
@@ -232,6 +260,43 @@ public class CourseRepository {
 				""";
 
 		jdbcTemplate.update(sql, courseId);
+	}
+
+	public Map<Integer, String> findStudentCourseStatuses(Integer studentId, List<Integer> courseIds) {
+		if (courseIds == null || courseIds.isEmpty()) {
+			return Map.of();
+		}
+
+		return jdbcTemplate.execute((Connection connection) -> {
+			String sql = """
+					SELECT course_id, status
+					FROM student_course_records
+					WHERE student_id = ?
+					  AND course_id = ANY(?)
+					""";
+
+			try (PreparedStatement statement = connection.prepareStatement(sql)) {
+				statement.setInt(1, studentId);
+
+				Array courseIdsArray = connection.createArrayOf("int4", courseIds.toArray(Integer[]::new));
+				try {
+					statement.setArray(2, courseIdsArray);
+
+					Map<Integer, String> statusByCourseId = new HashMap<>();
+					try (ResultSet resultSet = statement.executeQuery()) {
+						while (resultSet.next()) {
+							statusByCourseId.put(
+									resultSet.getInt("course_id"),
+									resultSet.getString("status"));
+						}
+					}
+
+					return statusByCourseId;
+				} finally {
+					courseIdsArray.free();
+				}
+			}
+		});
 	}
 
 	// Converts Postgres TEXT[] from JDBC into a JSON-friendly List<String>.
