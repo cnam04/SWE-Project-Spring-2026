@@ -1,5 +1,6 @@
 import AdminCourseDetail from '../components/AdminCourseDetail'
 import AdminCourseList from '../components/AdminCourseList'
+import AdminAddCoursePanel from '../components/AdminAddCoursePanel'
 import { useAdminCoursesPageHandler } from './handlers/useAdminCoursesPageHandler'
 import '../styles/CoursePrereqPage.css'
 import '../styles/AdminPage.css'
@@ -7,10 +8,19 @@ import '../styles/AdminPage.css'
 export default function AdminPage() {
   const {
     allCoursesCount,
+    allCourses,
     visibleCourses,
     loadingCourses,
     coursesError,
     isRefreshingCourses,
+    isAddCourseMode,
+    addCourseDraft,
+    addCoursePrerequisiteTree,
+    addCoursePrerequisiteSummary,
+    addCourseValidationErrors,
+    addCourseSubmitError,
+    isSavingCourse,
+    availablePrerequisiteCourses,
     searchText,
     searchField,
     sortField,
@@ -22,6 +32,16 @@ export default function AdminPage() {
     setSearchText,
     setSearchField,
     setSortField,
+    handleOpenAddCourse,
+    handleCancelAddCourse,
+    handleAddCourseDraftChange,
+    handleSetPrerequisiteRootType,
+    handleClearPrerequisiteTree,
+    handleChangePrerequisiteNodeType,
+    handleChangePrerequisiteNodeCourse,
+    handleAddPrerequisiteChild,
+    handleRemovePrerequisiteNode,
+    handleSaveAddCourse,
     handleRefreshCourses,
     handleSelectCourse,
     handleClearCourseSelection,
@@ -52,28 +72,50 @@ export default function AdminPage() {
               loading={loadingCourses}
               error={coursesError}
               isRefreshing={isRefreshingCourses}
+              isAddCourseMode={isAddCourseMode}
               searchText={searchText}
               searchField={searchField}
               sortField={sortField}
               selectedCourseId={selectedCourseId}
-              courseMutationsReady={courseMutationsReady}
               onSearchTextChange={setSearchText}
               onSearchFieldChange={setSearchField}
               onSortFieldChange={setSortField}
+              onOpenAddCourse={handleOpenAddCourse}
               onRefresh={handleRefreshCourses}
               onSelectCourse={handleSelectCourse}
             />
           </aside>
 
           <main className="column is-12-mobile is-7-desktop">
-            <AdminCourseDetail
-              course={selectedCourseDetail}
-              loading={selectedCourseLoading}
-              error={selectedCourseError}
-              courseMutationsReady={courseMutationsReady}
-              onRetry={handleRetrySelectedCourse}
-              onClearSelection={handleClearCourseSelection}
-            />
+            {isAddCourseMode ? (
+              <AdminAddCoursePanel
+                draft={addCourseDraft}
+                availableCourses={availablePrerequisiteCourses.length ? availablePrerequisiteCourses : allCourses}
+                prerequisiteTree={addCoursePrerequisiteTree}
+                prerequisiteSummary={addCoursePrerequisiteSummary}
+                validationErrors={addCourseValidationErrors}
+                submitError={addCourseSubmitError}
+                isSaving={isSavingCourse}
+                onCancel={handleCancelAddCourse}
+                onDraftChange={handleAddCourseDraftChange}
+                onSave={handleSaveAddCourse}
+                onSetRootType={handleSetPrerequisiteRootType}
+                onClearTree={handleClearPrerequisiteTree}
+                onChangeNodeType={handleChangePrerequisiteNodeType}
+                onChangeNodeCourse={handleChangePrerequisiteNodeCourse}
+                onAddChildNode={handleAddPrerequisiteChild}
+                onRemoveNode={handleRemovePrerequisiteNode}
+              />
+            ) : (
+              <AdminCourseDetail
+                course={selectedCourseDetail}
+                loading={selectedCourseLoading}
+                error={selectedCourseError}
+                courseMutationsReady={courseMutationsReady}
+                onRetry={handleRetrySelectedCourse}
+                onClearSelection={handleClearCourseSelection}
+              />
+            )}
           </main>
         </div>
       </div>

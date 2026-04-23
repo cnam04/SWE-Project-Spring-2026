@@ -16,11 +16,32 @@ async function request(path, options = {}) {
 		...options,
 	})
 
-	if (!response.ok) {
-		throw new Error(`Request failed (${response.status}) for ${path}`)
+	const contentType = response.headers.get('content-type') || ''
+	const isJsonResponse = contentType.includes('application/json')
+
+	let responsePayload = null
+	if (isJsonResponse) {
+		responsePayload = await response.json()
+	} else {
+		const textPayload = await response.text()
+		responsePayload = textPayload || null
 	}
 
-	return response.json()
+	if (!response.ok) {
+		const backendMessage = typeof responsePayload === 'object' && responsePayload
+			? responsePayload.message || responsePayload.error
+			: responsePayload
+
+		const errorMessage = backendMessage || `Request failed (${response.status}) for ${path}`
+		const error = new Error(errorMessage)
+		error.status = response.status
+		error.path = path
+		error.payload = responsePayload
+
+		throw error
+	}
+
+	return responsePayload
 }
 
 export function getTestItems() {
@@ -33,4 +54,11 @@ export function getCourses() {
 
 export function getCourseById(courseId) {
 	return request(`/api/courses/${courseId}`, { method: 'GET' })
+}
+
+export function createCourse(coursePayload) {
+	return request('/api/courses', {
+		method: 'POST',
+		body: JSON.stringify(coursePayload),
+	})
 }

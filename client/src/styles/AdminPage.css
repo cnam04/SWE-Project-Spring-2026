@@ -67,6 +67,14 @@
   gap: 0.75rem;
 }
 
+.admin-prereq-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .admin-prereq-course {
   display: flex;
   align-items: center;
@@ -78,8 +86,32 @@
   overflow-wrap: anywhere;
 }
 
+.admin-empty-tree {
+  border: 1px dashed #aac0db;
+  border-radius: 10px;
+  padding: 0.85rem;
+  background-color: #fafdff;
+}
+
+.admin-error-banner {
+  border: 1px solid #e5afaf;
+}
+
+.admin-validation-list {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.admin-prereq-group > .admin-prereq-children {
+  margin-top: 0.55rem;
+}
+
 @media (max-width: 768px) {
   .admin-course-list {
     max-height: none;
+  }
+
+  .admin-prereq-editor-head {
+    align-items: stretch;
   }
 }

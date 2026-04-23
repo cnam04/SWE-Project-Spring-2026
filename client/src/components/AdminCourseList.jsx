@@ -24,14 +24,15 @@ function AdminCourseList({
   loading,
   error,
   isRefreshing,
+  isAddCourseMode,
   searchText,
   searchField,
   sortField,
   selectedCourseId,
-  courseMutationsReady,
   onSearchTextChange,
   onSearchFieldChange,
   onSortFieldChange,
+  onOpenAddCourse,
   onRefresh,
   onSelectCourse,
 }) {
@@ -49,12 +50,11 @@ function AdminCourseList({
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
-            className="button is-light"
+            className={`button is-light ${isAddCourseMode ? 'is-link' : ''}`}
             type="button"
-            disabled={!courseMutationsReady}
-            title="Add Course will be enabled when write endpoints are available."
+            onClick={onOpenAddCourse}
           >
-            Add Course
+            {isAddCourseMode ? 'Adding Course...' : 'Add Course'}
           </button>
         </div>
       </div>

@@ -43,7 +43,28 @@ function normalizePrerequisiteNode(node) {
   }
 }
 
-function buildPrerequisiteExpression(node) {
+function sanitizePrerequisiteTreeForRequest(node) {
+  const normalizedNode = normalizePrerequisiteNode(node)
+
+  if (!normalizedNode) {
+    return null
+  }
+
+  if (normalizedNode.type === 'COURSE') {
+    return {
+      type: 'COURSE',
+      courseCode: normalizeText(normalizedNode.courseCode).trim(),
+      children: [],
+    }
+  }
+
+  return {
+    type: normalizedNode.type,
+    children: normalizedNode.children.map((childNode) => sanitizePrerequisiteTreeForRequest(childNode)),
+  }
+}
+
+export function buildPrerequisiteExpression(node) {
   if (!node) {
     return 'This course has no prerequisites.'
   }
@@ -78,6 +99,35 @@ function mapCourseBase(rawCourse) {
     title: normalizeText(source.title).trim(),
     credits: Number.isFinite(source.credits) ? source.credits : source.credits ?? null,
     attributes: normalizeAttributes(source.attributes),
+  }
+}
+
+export function mapCourseDetailToAdminSummary(courseDetail) {
+  return mapCourseBase(courseDetail)
+}
+
+export function mapCreateCourseDraftToRequest(draft, prerequisiteTree) {
+  const source = draft || {}
+  const rawAttributes = normalizeText(source.attributesText)
+
+  const attributes = rawAttributes
+    .split(',')
+    .map((attribute) => attribute.trim())
+    .filter(Boolean)
+    .filter((attribute, index, allValues) => allValues.indexOf(attribute) === index)
+
+  const normalizedCourseCode = normalizeText(source.courseCode).trim()
+  const normalizedCrn = normalizeText(source.crn).trim()
+  const normalizedTitle = normalizeText(source.title).trim()
+  const creditsInput = normalizeText(source.credits).trim()
+
+  return {
+    course_code: normalizedCourseCode,
+    crn: normalizedCrn || null,
+    title: normalizedTitle,
+    credits: creditsInput === '' ? null : Number(creditsInput),
+    attributes,
+    prerequisiteTree: sanitizePrerequisiteTreeForRequest(prerequisiteTree),
   }
 }
 
