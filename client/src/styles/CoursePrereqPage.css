@@ -26,6 +26,16 @@
   );
 }
 
+.prereq-main-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.prereq-graph-canvas {
+  flex: 1;
+  margin-bottom: 0;
+}
+
 .node-item + .node-item {
   margin-top: 0.85rem;
   padding-top: 0.85rem;
@@ -40,7 +50,28 @@
   font-size: 0.9rem;
 }
 
+.course-list {
+  overflow-y: auto;
+  max-height: min(26rem, 55vh);
+  padding-right: 0.25rem;
+}
+
+.course-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.course-list::-webkit-scrollbar-thumb {
+  background: #b6c3d6;
+  border-radius: 999px;
+}
+
 @media (max-width: 768px) {
+  .course-list {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
   .graph-canvas-placeholder {
     min-height: 14rem;
   }
