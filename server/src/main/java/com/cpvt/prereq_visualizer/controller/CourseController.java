@@ -48,9 +48,10 @@ public class CourseController {
 	@GetMapping({ "/api/courses/{id}/graph", "/api/courses/{id}/graph/" })
 	public CourseGraphModel getCourseGraph(
 			@PathVariable("id") Integer id,
-			@RequestParam(value = "studentId", required = false) Integer studentId) {
+			@RequestParam(value = "studentId", required = false) Integer studentId,
+			@RequestParam(value = "expand", required = false, defaultValue = "false") Boolean expand) {
 		try {
-			return courseService.getCourseGraph(id, studentId)
+			return courseService.getCourseGraph(id, studentId, expand)
 					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
 		} catch (CourseValidationException ex) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);

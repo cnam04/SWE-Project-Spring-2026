@@ -10,7 +10,10 @@ public class CourseGraphModel {
 
 	private Integer courseId;
 	private String courseCode;
+	private String title;
 	private Integer studentId;
+	private String statusMode;
+	private String layoutDirection;
 	private List<CourseGraphNodeModel> nodes;
 	private List<CourseGraphEdgeModel> edges;
 
@@ -20,12 +23,18 @@ public class CourseGraphModel {
 	public CourseGraphModel(
 			Integer courseId,
 			String courseCode,
+			String title,
 			Integer studentId,
+			String statusMode,
+			String layoutDirection,
 			List<CourseGraphNodeModel> nodes,
 			List<CourseGraphEdgeModel> edges) {
 		this.courseId = courseId;
 		this.courseCode = courseCode;
+		this.title = title;
 		this.studentId = studentId;
+		this.statusMode = statusMode;
+		this.layoutDirection = layoutDirection;
 		this.nodes = nodes;
 		this.edges = edges;
 	}
@@ -46,12 +55,36 @@ public class CourseGraphModel {
 		this.courseCode = courseCode;
 	}
 
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
 	public Integer getStudentId() {
 		return studentId;
 	}
 
 	public void setStudentId(Integer studentId) {
 		this.studentId = studentId;
+	}
+
+	public String getStatusMode() {
+		return statusMode;
+	}
+
+	public void setStatusMode(String statusMode) {
+		this.statusMode = statusMode;
+	}
+
+	public String getLayoutDirection() {
+		return layoutDirection;
+	}
+
+	public void setLayoutDirection(String layoutDirection) {
+		this.layoutDirection = layoutDirection;
 	}
 
 	public List<CourseGraphNodeModel> getNodes() {

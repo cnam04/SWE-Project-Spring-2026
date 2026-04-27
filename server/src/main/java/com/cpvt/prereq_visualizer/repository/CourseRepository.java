@@ -101,7 +101,11 @@ public class CourseRepository {
 					pn.node_type,
 					pn.required_course_id,
 					required_course.course_code AS required_course_code,
-					required_course.title AS required_course_title
+					required_course.crn AS required_course_crn,
+					required_course.title AS required_course_title,
+					required_course.credits AS required_course_credits,
+					required_course.attributes AS required_course_attributes,
+					required_course.root_prerequisite_node_id AS required_course_root_prerequisite_node_id
 				FROM prerequisite_nodes pn
 				LEFT JOIN courses required_course ON required_course.course_id = pn.required_course_id
 				WHERE pn.node_id = ?
@@ -113,7 +117,11 @@ public class CourseRepository {
 						rs.getString("node_type"),
 						(Integer) rs.getObject("required_course_id"),
 						rs.getString("required_course_code"),
-						rs.getString("required_course_title")),
+						rs.getString("required_course_crn"),
+						rs.getString("required_course_title"),
+						(Integer) rs.getObject("required_course_credits"),
+						parseTextArray(rs.getArray("required_course_attributes")),
+						(Integer) rs.getObject("required_course_root_prerequisite_node_id")),
 				nodeId);
 
 		return nodes.stream().findFirst();

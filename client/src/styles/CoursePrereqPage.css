@@ -2,6 +2,12 @@
   align-items: stretch;
 }
 
+@media (min-width: 769px) {
+  .prereq-layout > .column > .app-surface {
+    min-height: 700px;
+  }
+}
+
 .h-full {
   height: 100%;
 }

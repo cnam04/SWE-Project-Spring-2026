@@ -1,18 +1,12 @@
 package com.cpvt.prereq_visualizer.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 // Node DTO for graph responses used by visualization UIs.
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CourseGraphNodeModel {
 
 	private String id;
 	private String type;
-	private Integer courseId;
-	private String courseCode;
-	private String title;
-	private String status;
-	private Integer depth;
+	private CourseGraphPositionModel position;
+	private Object data;
 
 	public CourseGraphNodeModel() {
 	}
@@ -20,18 +14,12 @@ public class CourseGraphNodeModel {
 	public CourseGraphNodeModel(
 			String id,
 			String type,
-			Integer courseId,
-			String courseCode,
-			String title,
-			String status,
-			Integer depth) {
+			CourseGraphPositionModel position,
+			Object data) {
 		this.id = id;
 		this.type = type;
-		this.courseId = courseId;
-		this.courseCode = courseCode;
-		this.title = title;
-		this.status = status;
-		this.depth = depth;
+		this.position = position;
+		this.data = data;
 	}
 
 	public String getId() {
@@ -50,43 +38,19 @@ public class CourseGraphNodeModel {
 		this.type = type;
 	}
 
-	public Integer getCourseId() {
-		return courseId;
+	public CourseGraphPositionModel getPosition() {
+		return position;
 	}
 
-	public void setCourseId(Integer courseId) {
-		this.courseId = courseId;
+	public void setPosition(CourseGraphPositionModel position) {
+		this.position = position;
 	}
 
-	public String getCourseCode() {
-		return courseCode;
+	public Object getData() {
+		return data;
 	}
 
-	public void setCourseCode(String courseCode) {
-		this.courseCode = courseCode;
-	}
-
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
-	public Integer getDepth() {
-		return depth;
-	}
-
-	public void setDepth(Integer depth) {
-		this.depth = depth;
+	public void setData(Object data) {
+		this.data = data;
 	}
 }

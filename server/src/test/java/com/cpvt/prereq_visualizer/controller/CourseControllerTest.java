@@ -19,9 +19,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cpvt.prereq_visualizer.model.CourseDetailModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphCourseNodeDataModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphEdgeDataModel;
 import com.cpvt.prereq_visualizer.model.CourseGraphEdgeModel;
 import com.cpvt.prereq_visualizer.model.CourseGraphModel;
 import com.cpvt.prereq_visualizer.model.CourseGraphNodeModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphOperatorNodeDataModel;
+import com.cpvt.prereq_visualizer.model.CourseGraphPositionModel;
 import com.cpvt.prereq_visualizer.model.CourseModel;
 import com.cpvt.prereq_visualizer.model.PrerequisiteTreeNodeModel;
 import com.cpvt.prereq_visualizer.service.CourseConflictException;
@@ -310,23 +314,71 @@ class CourseControllerTest {
 		CourseGraphModel graph = new CourseGraphModel(
 				12,
 				"CPS410",
+				"Advanced Topics in CS",
 				null,
+				"none",
+				"LR",
 				List.of(
-						new CourseGraphNodeModel("course-CPS410", "course", 12, "CPS410", "Advanced Topics in CS", null, 0),
-						new CourseGraphNodeModel("op-1", "OR", null, null, null, null, 1),
-						new CourseGraphNodeModel("course-CPS330", "course", 10, "CPS330", "Operating Systems", null, 2)),
+						new CourseGraphNodeModel(
+								"course-12",
+								"courseNode",
+								new CourseGraphPositionModel(0, 0),
+								new CourseGraphCourseNodeDataModel(
+										"course",
+										12,
+										"CPS410",
+										"10012",
+										"Advanced Topics in CS",
+										3,
+										List.of("Capstone Track"),
+										null,
+										true)),
+						new CourseGraphNodeModel(
+								"op-12",
+								"operatorNode",
+								new CourseGraphPositionModel(0, 0),
+								new CourseGraphOperatorNodeDataModel("operator", 12, "OR", "OR")),
+						new CourseGraphNodeModel(
+								"course-10",
+								"courseNode",
+								new CourseGraphPositionModel(0, 0),
+								new CourseGraphCourseNodeDataModel(
+										"course",
+										10,
+										"CPS330",
+										"10010",
+										"Operating Systems",
+										3,
+										List.of("Advanced Core"),
+										null,
+										false))),
 				List.of(
-						new CourseGraphEdgeModel("course-CPS410", "op-1"),
-						new CourseGraphEdgeModel("op-1", "course-CPS330")));
+						new CourseGraphEdgeModel(
+								"edge-course-10-op-12",
+								"course-10",
+								"op-12",
+								"smoothstep",
+								new CourseGraphEdgeDataModel("satisfies")),
+						new CourseGraphEdgeModel(
+								"edge-op-12-course-12",
+								"op-12",
+								"course-12",
+								"smoothstep",
+								new CourseGraphEdgeDataModel("satisfies"))));
 
-		when(courseService.getCourseGraph(12, null)).thenReturn(Optional.of(graph));
+		when(courseService.getCourseGraph(12, null, false)).thenReturn(Optional.of(graph));
 
 		mockMvc.perform(get("/api/courses/12/graph"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.courseId").value(12))
 				.andExpect(jsonPath("$.courseCode").value("CPS410"))
-				.andExpect(jsonPath("$.nodes[0].id").value("course-CPS410"))
-				.andExpect(jsonPath("$.edges[0].source").value("course-CPS410"));
+				.andExpect(jsonPath("$.statusMode").value("none"))
+				.andExpect(jsonPath("$.layoutDirection").value("LR"))
+				.andExpect(jsonPath("$.nodes[0].id").value("course-12"))
+				.andExpect(jsonPath("$.nodes[0].type").value("courseNode"))
+				.andExpect(jsonPath("$.nodes[0].data.kind").value("course"))
+				.andExpect(jsonPath("$.nodes[1].data.operator").value("OR"))
+				.andExpect(jsonPath("$.edges[0].data.relationship").value("satisfies"));
 	}
 
 	@Test
@@ -334,23 +386,72 @@ class CourseControllerTest {
 		CourseGraphModel graph = new CourseGraphModel(
 				12,
 				"CPS410",
+				"Advanced Topics in CS",
 				1,
+				"student",
+				"LR",
 				List.of(
-						new CourseGraphNodeModel("course-CPS410", "course", 12, "CPS410", "Advanced Topics in CS", "not_taken", 0),
-						new CourseGraphNodeModel("course-CPS320", "course", 9, "CPS320", "Database Systems", "planned", 1)),
+						new CourseGraphNodeModel(
+								"course-12",
+								"courseNode",
+								new CourseGraphPositionModel(0, 0),
+								new CourseGraphCourseNodeDataModel(
+										"course",
+										12,
+										"CPS410",
+										"10012",
+										"Advanced Topics in CS",
+										3,
+										List.of("Capstone Track"),
+										"not_taken",
+										true)),
+						new CourseGraphNodeModel(
+								"course-9",
+								"courseNode",
+								new CourseGraphPositionModel(0, 0),
+								new CourseGraphCourseNodeDataModel(
+										"course",
+										9,
+										"CPS320",
+										"10009",
+										"Database Systems",
+										3,
+										List.of("Advanced Core"),
+										"planned",
+										false))),
 				List.of());
 
-		when(courseService.getCourseGraph(12, 1)).thenReturn(Optional.of(graph));
+		when(courseService.getCourseGraph(12, 1, false)).thenReturn(Optional.of(graph));
 
 		mockMvc.perform(get("/api/courses/12/graph").param("studentId", "1"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.studentId").value(1))
-				.andExpect(jsonPath("$.nodes[1].status").value("planned"));
+				.andExpect(jsonPath("$.statusMode").value("student"))
+				.andExpect(jsonPath("$.nodes[1].data.status").value("planned"));
+	}
+
+	@Test
+	void getCourseGraph_withExpandTrue_passesExpandFlag() throws Exception {
+		CourseGraphModel graph = new CourseGraphModel(
+				12,
+				"CPS410",
+				"Advanced Topics in CS",
+				null,
+				"none",
+				"LR",
+				List.of(),
+				List.of());
+
+		when(courseService.getCourseGraph(12, null, true)).thenReturn(Optional.of(graph));
+
+		mockMvc.perform(get("/api/courses/12/graph").param("expand", "true"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.courseId").value(12));
 	}
 
 	@Test
 	void getCourseGraph_whenValidationFails_returns400() throws Exception {
-		when(courseService.getCourseGraph(12, 999))
+		when(courseService.getCourseGraph(12, 999, false))
 				.thenThrow(new CourseValidationException("Referenced student not found: 999"));
 
 		mockMvc.perform(get("/api/courses/12/graph").param("studentId", "999"))
