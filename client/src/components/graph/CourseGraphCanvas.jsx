@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Background, Controls, MiniMap, ReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import applyCourseGraphLayout from './layout/applyCourseGraphLayout'
@@ -12,6 +12,10 @@ const NODE_TYPES = {
 }
 
 export default function CourseGraphCanvas({ graphData, isLoading, error }) {
+	const graphShellRef = useRef(null)
+	const [isFullscreen, setIsFullscreen] = useState(false)
+	const [reactFlowInstance, setReactFlowInstance] = useState(null)
+
 	const { nodes, edges, hasNoPrerequisites } = useMemo(() => {
 		const layoutedGraph = applyCourseGraphLayout(graphData)
 		const nodeCount = layoutedGraph.nodes.length
@@ -23,6 +27,67 @@ export default function CourseGraphCanvas({ graphData, isLoading, error }) {
 			hasNoPrerequisites: nodeCount > 0 && (edgeCount === 0 || nodeCount === 1),
 		}
 	}, [graphData])
+
+	const fitGraphInView = useCallback(() => {
+		if (!reactFlowInstance || !nodes.length) {
+			return
+		}
+
+		reactFlowInstance.fitView({ padding: 0.28, minZoom: 0.25, maxZoom: 1.1 })
+	}, [nodes.length, reactFlowInstance])
+
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			fitGraphInView()
+		}, 120)
+
+		return () => {
+			clearTimeout(timeoutId)
+		}
+	}, [fitGraphInView, isFullscreen])
+
+	useEffect(() => {
+		const updateFullscreenState = () => {
+			const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement
+			setIsFullscreen(fullscreenElement === graphShellRef.current)
+		}
+
+		document.addEventListener('fullscreenchange', updateFullscreenState)
+		document.addEventListener('webkitfullscreenchange', updateFullscreenState)
+
+		return () => {
+			document.removeEventListener('fullscreenchange', updateFullscreenState)
+			document.removeEventListener('webkitfullscreenchange', updateFullscreenState)
+		}
+	}, [])
+
+	const handleToggleFullscreen = useCallback(async () => {
+		const shellElement = graphShellRef.current
+		if (!shellElement) {
+			return
+		}
+
+		const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement
+
+		if (fullscreenElement === shellElement) {
+			if (document.exitFullscreen) {
+				await document.exitFullscreen()
+			} else if (document.webkitExitFullscreen) {
+				document.webkitExitFullscreen()
+			}
+			return
+		}
+
+		if (document.fullscreenElement && document.exitFullscreen) {
+			await document.exitFullscreen()
+		}
+
+		if (shellElement.requestFullscreen) {
+			await shellElement.requestFullscreen()
+		} else if (shellElement.webkitRequestFullscreen) {
+			shellElement.webkitRequestFullscreen()
+		}
+	}, [])
 
 	if (isLoading) {
 		return (
@@ -59,12 +124,24 @@ export default function CourseGraphCanvas({ graphData, isLoading, error }) {
 	}
 
 	return (
-		<div className="course-graph-shell prereq-graph-canvas">
-			{hasNoPrerequisites ? (
-				<p className="course-graph-note is-size-7 has-text-grey mb-0">
-					This course has no prerequisites.
-				</p>
-			) : null}
+		<div
+			ref={graphShellRef}
+			className={`course-graph-shell prereq-graph-canvas${isFullscreen ? ' is-fullscreen' : ''}`}
+		>
+			<div className="course-graph-toolbar">
+				{hasNoPrerequisites ? (
+					<p className="course-graph-note is-size-7 has-text-grey mb-0">This course has no prerequisites.</p>
+				) : (
+					<span className="course-graph-note-placeholder" aria-hidden="true" />
+				)}
+				<button
+					type="button"
+					className="button is-small is-light course-graph-fullscreen-button"
+					onClick={handleToggleFullscreen}
+				>
+					{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+				</button>
+			</div>
 			<div className="course-graph-flow">
 				<ReactFlow
 					nodes={nodes}
@@ -72,6 +149,7 @@ export default function CourseGraphCanvas({ graphData, isLoading, error }) {
 					nodeTypes={NODE_TYPES}
 					fitView
 					fitViewOptions={{ padding: 0.28, minZoom: 0.25, maxZoom: 1.1 }}
+					onInit={setReactFlowInstance}
 					minZoom={0.25}
 					maxZoom={1.6}
 					nodesDraggable={false}
