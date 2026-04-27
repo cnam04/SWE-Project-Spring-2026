@@ -84,3 +84,22 @@ export function updatePrerequisites(courseId, prerequisitesPayload) {
 		body: JSON.stringify(prerequisitesPayload),
 	})
 }
+
+export function getCourseGraph(courseId, queryOptions = {}) {
+	const searchParams = new URLSearchParams()
+
+	if (queryOptions.studentId !== null && queryOptions.studentId !== undefined && queryOptions.studentId !== '') {
+		searchParams.set('studentId', String(queryOptions.studentId))
+	}
+
+	if (queryOptions.expand === true) {
+		searchParams.set('expand', 'true')
+	}
+
+	const queryString = searchParams.toString()
+	const path = queryString
+		? `/api/courses/${courseId}/graph?${queryString}`
+		: `/api/courses/${courseId}/graph`
+
+	return request(path, { method: 'GET' })
+}

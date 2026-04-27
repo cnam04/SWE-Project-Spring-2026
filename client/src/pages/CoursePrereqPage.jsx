@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import CourseGraphCanvas from '../components/graph/CourseGraphCanvas';
+import { useCoursePrereqGraphHandler } from './handlers/useCoursePrereqGraphHandler';
 import { loadAdminCourseDetail, loadAdminCourses } from '../services/adminCoursesService';
 import '../styles/CoursePrereqPage.css';
 
@@ -32,6 +34,20 @@ export default function CoursePrereqPage() {
 
   const [searchText, setSearchText] = useState('');
   const [searchField, setSearchField] = useState('title');
+
+  const {
+    graphData,
+    isGraphLoading,
+    graphError,
+    useStudentContext,
+    studentIdInput,
+    expandGraph,
+    setUseStudentContext,
+    setStudentIdInput,
+    setExpandGraph,
+    handleGenerateGraph,
+    resetGraphState,
+  } = useCoursePrereqGraphHandler();
 
   const fetchCourses = useCallback(async (showRefreshingState) => {
     if (showRefreshingState) {
@@ -94,10 +110,12 @@ export default function CoursePrereqPage() {
       setSelectedCourseId(null);
       setSelectedCourseDetail(null);
       setSelectedCourseError('');
+      resetGraphState();
     }
-  }, [courses, selectedCourseId]);
+  }, [courses, resetGraphState, selectedCourseId]);
 
   const handleSelectCourse = (courseId) => {
+    resetGraphState();
     setSelectedCourseId(courseId);
     fetchSelectedCourseDetail(courseId);
   };
@@ -108,6 +126,7 @@ export default function CoursePrereqPage() {
     setSelectedCourseDetail(null);
     setSelectedCourseLoading(false);
     setSelectedCourseError('');
+    resetGraphState();
   };
 
   const handleRetryCourses = () => {
@@ -120,6 +139,10 @@ export default function CoursePrereqPage() {
     }
 
     fetchSelectedCourseDetail(selectedCourseId);
+  };
+
+  const handleGenerateGraphForSelectedCourse = () => {
+    handleGenerateGraph(selectedCourseId);
   };
 
   const filteredCourses = courses.filter((course) => {
@@ -243,14 +266,10 @@ export default function CoursePrereqPage() {
             <section className="box app-surface h-full prereq-main-panel">
               <h2 className="title is-5 mb-2">Graph Visualization</h2>
               <p className="is-size-7 has-text-grey mb-4">
-                Placeholder canvas for React Flow nodes and edges.
+                Generate a graph from the selected course details panel.
               </p>
 
-              <div className="graph-canvas-placeholder prereq-graph-canvas">
-                <p className="has-text-grey is-size-7 has-text-centered mb-0">
-                  React Flow canvas will render here.
-                </p>
-              </div>
+              <CourseGraphCanvas graphData={graphData} isLoading={isGraphLoading} error={graphError} />
             </section>
           </main>
 
@@ -287,6 +306,79 @@ export default function CoursePrereqPage() {
 
                   <p className="is-size-7 has-text-grey mt-3 mb-1">Prerequisite Summary</p>
                   <p className="is-size-7 mb-0">{selectedCourseDetail.prerequisiteExpression}</p>
+
+                  <div className="graph-options-section mt-4">
+                    <p className="is-size-7 has-text-grey mb-2">Graph Options</p>
+
+                    <p className="label is-small mb-1">Use Student Context?</p>
+                    <div className="field mb-2">
+                      <label className="radio mr-3">
+                        <input
+                          type="radio"
+                          name="use-student-context"
+                          checked={!useStudentContext}
+                          onChange={() => setUseStudentContext(false)}
+                        />
+                        <span className="ml-1">No</span>
+                      </label>
+                      <label className="radio">
+                        <input
+                          type="radio"
+                          name="use-student-context"
+                          checked={useStudentContext}
+                          onChange={() => setUseStudentContext(true)}
+                        />
+                        <span className="ml-1">Yes</span>
+                      </label>
+                    </div>
+
+                    {useStudentContext ? (
+                      <div className="field mb-2">
+                        <label className="label is-small mb-1">Student ID</label>
+                        <div className="control">
+                          <input
+                            className="input is-small"
+                            type="text"
+                            inputMode="numeric"
+                            value={studentIdInput}
+                            onChange={(event) => setStudentIdInput(event.target.value)}
+                            placeholder="Enter student ID"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <p className="label is-small mb-1">Expand prerequisite chain?</p>
+                    <div className="field mb-3">
+                      <label className="radio mr-3">
+                        <input
+                          type="radio"
+                          name="expand-prereq-graph"
+                          checked={!expandGraph}
+                          onChange={() => setExpandGraph(false)}
+                        />
+                        <span className="ml-1">False</span>
+                      </label>
+                      <label className="radio">
+                        <input
+                          type="radio"
+                          name="expand-prereq-graph"
+                          checked={expandGraph}
+                          onChange={() => setExpandGraph(true)}
+                        />
+                        <span className="ml-1">True</span>
+                      </label>
+                    </div>
+
+                    <button
+                      className="button is-small is-link"
+                      type="button"
+                      onClick={handleGenerateGraphForSelectedCourse}
+                      disabled={selectedCourseId === null || isGraphLoading}
+                    >
+                      {isGraphLoading ? 'Generating...' : 'Generate Graph'}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <p className="is-size-7 has-text-grey">

@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+PREREQUISITE_GRAPH_SPECIFICATION.md

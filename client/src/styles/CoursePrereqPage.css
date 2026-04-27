@@ -42,6 +42,14 @@
   margin-bottom: 0;
 }
 
+.graph-preview-state {
+  max-width: 26rem;
+}
+
+.graph-options-section .radio {
+  font-size: 0.82rem;
+}
+
 .node-item + .node-item {
   margin-top: 0.85rem;
   padding-top: 0.85rem;
