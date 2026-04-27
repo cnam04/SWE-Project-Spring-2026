@@ -71,6 +71,7 @@ export default function CourseGraphCanvas({ graphData, isLoading, error }) {
 					edges={edges}
 					nodeTypes={NODE_TYPES}
 					fitView
+					fitViewOptions={{ padding: 0.28, minZoom: 0.25, maxZoom: 1.1 }}
 					minZoom={0.25}
 					maxZoom={1.6}
 					nodesDraggable={false}
