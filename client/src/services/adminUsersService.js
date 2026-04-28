@@ -1,4 +1,4 @@
-import { getUserById, getUsers } from '../api'
+import { getUserById, getUsers, deleteUserById } from '../api'
 
 function normalizeText(value) {
 	if (value === null || value === undefined) {
@@ -50,4 +50,8 @@ export async function loadAdminUsers() {
 export async function loadAdminUserDetail(userId) {
 	const rawUser = await getUserById(userId)
 	return normalizeUserDetail(rawUser)
+}
+
+export async function deleteAdminUserDetail(userId) {
+	return await deleteUserById(userId)
 }

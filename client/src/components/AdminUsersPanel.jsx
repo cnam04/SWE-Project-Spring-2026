@@ -187,6 +187,17 @@ function AdminUsersPanel({
 								</div>
 
 								<p className="is-size-7 has-text-grey mt-4 mb-0">{renderUserSubtitle(selectedUser)}</p>
+
+								<div className="mt-5 pt-4" style={{ borderTop: '1px solid #eee' }}>
+									<button 
+										className="button is-danger is-small" 
+										type="button" 
+										onClick={() => onDeleteUser(selectedUser.userId)}
+									>
+										Delete User
+									</button>
+								</div>
+								
 							</div>
 						) : null}
 					</section>

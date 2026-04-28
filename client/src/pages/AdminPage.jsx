@@ -73,6 +73,7 @@ export default function AdminPage() {
     handleRefreshUsers,
     handleSelectUser,
     handleRetrySelectedUser,
+    handleDeleteUser,
   } = useAdminUsersPageHandler()
 
   if (hasKnownAccess && !isAdmin) {
@@ -134,6 +135,7 @@ export default function AdminPage() {
             onRefresh={handleRefreshUsers}
             onSelectUser={handleSelectUser}
             onRetrySelectedUser={handleRetrySelectedUser}
+            onDeleteUser={handleDeleteUser}
           />
         ) : (
           <div className="columns is-variable is-4 prereq-layout">

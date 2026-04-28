@@ -84,3 +84,7 @@ export function updatePrerequisites(courseId, prerequisitesPayload) {
 		body: JSON.stringify(prerequisitesPayload),
 	})
 }
+
+export function deleteUserById(userId) {
+	return request(`/api/users/${userId}`, { method: 'DELETE' })
+}
