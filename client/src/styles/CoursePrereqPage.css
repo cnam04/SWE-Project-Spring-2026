@@ -1,0 +1,92 @@
+.prereq-layout {
+  align-items: stretch;
+}
+
+@media (min-width: 769px) {
+  .prereq-layout > .column > .app-surface {
+    min-height: 700px;
+  }
+}
+
+.h-full {
+  height: 100%;
+}
+
+.legend-stack p {
+  margin-bottom: 0.5rem;
+}
+
+.graph-canvas-placeholder {
+  min-height: 20rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #98adc8;
+  border-radius: 10px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(218, 228, 242, 0.9),
+    rgba(218, 228, 242, 0.9) 12px,
+    rgba(248, 250, 253, 1) 12px,
+    rgba(248, 250, 253, 1) 24px
+  );
+}
+
+.prereq-main-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.prereq-graph-canvas {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.graph-preview-state {
+  max-width: 26rem;
+}
+
+.graph-options-section .radio {
+  font-size: 0.82rem;
+}
+
+.node-item + .node-item {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #ccd6e3;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.course-list {
+  overflow-y: auto;
+  max-height: min(26rem, 55vh);
+  padding-right: 0.25rem;
+}
+
+.course-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.course-list::-webkit-scrollbar-thumb {
+  background: #b6c3d6;
+  border-radius: 999px;
+}
+
+@media (max-width: 768px) {
+  .course-list {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  .graph-canvas-placeholder {
+    min-height: 14rem;
+  }
+}

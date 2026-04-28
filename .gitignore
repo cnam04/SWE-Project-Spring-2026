@@ -1,0 +1,97 @@
+# -----------------------------
+# OS / System files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Logs
+# -----------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# -----------------------------
+# Environment / local config
+# -----------------------------
+.env
+.env.*
+!.env.example
+*.local
+
+# -----------------------------
+# Node / Frontend (client)
+# -----------------------------
+node_modules/
+client/node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Vite-specific outputs
+client/dist/
+client/dist-ssr/
+
+# -----------------------------
+# Java / Maven / Spring (server)
+# -----------------------------
+target/
+server/target/
+
+# Maven wrapper binary (kept from server template)
+server/.mvn/wrapper/maven-wrapper.jar
+
+# Compiled artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# -----------------------------
+# IDE / Editor files
+# -----------------------------
+.idea/
+*.iws
+*.iml
+*.ipr
+
+.vscode/*
+!.vscode/extensions.json
+
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# Keep build dirs under source trees if intentionally created there
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+
+# Personal docs
+DOCKER_DEVELOPMENT_GUIDE.md
+API_ENDPOINTS_DOCS.md
+ADMIN_PAGE_SPECIFICATION.md
