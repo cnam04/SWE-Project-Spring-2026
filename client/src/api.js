@@ -85,7 +85,6 @@ export function updatePrerequisites(courseId, prerequisitesPayload) {
 	})
 }
 
-<<<<<<< HEAD
 export function getCourseGraph(courseId, queryOptions = {}) {
 	const searchParams = new URLSearchParams()
 
@@ -104,8 +103,7 @@ export function getCourseGraph(courseId, queryOptions = {}) {
 
 	return request(path, { method: 'GET' })
 }
-=======
+
 export function deleteUserById(userId) {
 	return request(`/api/users/${userId}`, { method: 'DELETE' })
 }
->>>>>>> user-delete-button
