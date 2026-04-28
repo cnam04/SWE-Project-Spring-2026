@@ -108,4 +108,4 @@ export function getCourseGraph(courseId, queryOptions = {}) {
 export function deleteUserById(userId) {
 	return request(`/api/users/${userId}`, { method: 'DELETE' })
 }
->>>>>>> user-delete-button
+
