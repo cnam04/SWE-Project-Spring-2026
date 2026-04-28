@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { loadAdminUserDetail, loadAdminUsers } from '../../services/adminUsersService'
+import { loadAdminUserDetail, loadAdminUsers, deleteAdminUserDetail } from '../../services/adminUsersService'
+
 
 function asSearchText(value) {
 	if (value === null || value === undefined) {
@@ -142,6 +143,23 @@ export function useAdminUsersPageHandler() {
 		fetchSelectedUser(selectedUserId, true)
 	}, [fetchSelectedUser, selectedUserId])
 
+	const handleDeleteUser = useCallback(async (deleteId) => {
+		if (!window.confirm('Are you sure you want to delete this user?')) return;
+
+		try {
+			await deleteAdminUserDetail(deleteId)
+			// clear the selection if they deleted the user they are currently looking at
+			if (selectedUserId === deleteId) {
+				setSelectedUserId(null)
+				setSelectedUser(null)
+			}
+			// refresh the list to remove deleted user
+			fetchUsers(true)
+		} catch (err) {
+			alert(err.message || 'Failed to delete user')
+		}
+	}, [fetchUsers, selectedUserId])
+
 	return {
 		allUsersCount: users.length,
 		users,
@@ -160,5 +178,6 @@ export function useAdminUsersPageHandler() {
 		handleRefreshUsers,
 		handleSelectUser,
 		handleRetrySelectedUser,
+		handleDeleteUser
 	}
 }
