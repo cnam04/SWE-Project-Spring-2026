@@ -51,6 +51,7 @@ function AdminUsersPanel({
 	onRefresh,
 	onSelectUser,
 	onRetrySelectedUser,
+	onDeleteUser,
 }) {
 	return (
 		<section className="box app-surface h-full">
