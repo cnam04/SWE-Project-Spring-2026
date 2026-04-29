@@ -539,7 +539,78 @@ VALUES
     (6, 1, 4, 'completed',   'A',  'Spring', 2025), -- Completed CPS210 (Foundations)
     (7, 1, 5, 'in_progress', NULL, 'Fall',   2025), -- In progress CPS310 (Data Structures)
     (8, 1, 24, 'in_progress', NULL, 'Fall',  2025), -- In progress MAT251 (Calculus I)
-    (9, 1, 11, 'planned',     NULL, 'Spring',2026); -- Planned CPS415 (Algorithms)
+    (9, 1, 11, 'planned',     NULL, 'Spring',2026), -- Planned CPS415 (Algorithms)
+
+    -- Student 2: late-stage student (mostly completed)
+    (10, 2, 21, 'completed',   'A',  'Fall',   2022),
+    (11, 2, 1,  'completed',  'A-',  'Fall',   2022),
+    (12, 2, 2,  'completed',  'B+',  'Spring', 2023),
+    (13, 2, 3,  'completed',  'A-',  'Spring', 2023),
+    (14, 2, 22, 'completed',   'B',  'Fall',   2023),
+    (15, 2, 4,  'completed',   'A',  'Fall',   2023),
+    (16, 2, 5,  'completed',  'A-',  'Spring', 2024),
+    (17, 2, 7,  'completed',  'B+',  'Fall',   2024),
+    (18, 2, 13, 'completed',  'A-',  'Spring', 2025),
+    (19, 2, 16, 'in_progress', NULL, 'Fall',   2025),
+    (20, 2, 14, 'planned',     NULL, 'Spring', 2026),
+
+    -- Student 3: freshman trajectory
+    (21, 3, 1,  'completed',   'B',  'Fall',   2025),
+    (22, 3, 2,  'in_progress', NULL, 'Spring', 2026),
+    (23, 3, 3,  'planned',     NULL, 'Fall',   2026),
+    (24, 3, 21, 'planned',     NULL, 'Fall',   2026),
+
+    -- Student 4: mid-program progression
+    (25, 4, 21, 'completed',  'B+',  'Fall',   2024),
+    (26, 4, 1,  'completed',  'A-',  'Fall',   2024),
+    (27, 4, 2,  'completed',   'B',  'Spring', 2025),
+    (28, 4, 3,  'completed',  'B+',  'Spring', 2025),
+    (29, 4, 22, 'in_progress', NULL, 'Fall',   2025),
+    (30, 4, 4,  'in_progress', NULL, 'Fall',   2025),
+    (31, 4, 5,  'planned',     NULL, 'Spring', 2026),
+    (32, 4, 24, 'planned',     NULL, 'Spring', 2026),
+
+    -- Student 5: math-heavy background, building CS core
+    (33, 5, 21, 'completed',   'A',  'Spring', 2023),
+    (34, 5, 22, 'completed',  'A-',  'Fall',   2023),
+    (35, 5, 24, 'completed',  'B+',  'Spring', 2024),
+    (36, 5, 25, 'completed',   'B',  'Fall',   2024),
+    (37, 5, 35, 'completed',  'A-',  'Spring', 2025),
+    (38, 5, 1,  'completed',   'A',  'Fall',   2025),
+    (39, 5, 2,  'completed',  'A-',  'Fall',   2025),
+    (40, 5, 4,  'in_progress', NULL, 'Spring', 2026),
+    (41, 5, 5,  'planned',     NULL, 'Fall',   2026),
+    (42, 5, 11, 'planned',     NULL, 'Spring', 2027),
+
+    -- Student 6: near-graduation path
+    (43, 6, 21, 'completed',  'A-',  'Fall',   2022),
+    (44, 6, 22, 'completed',  'B+',  'Spring', 2023),
+    (45, 6, 24, 'completed',   'B',  'Fall',   2023),
+    (46, 6, 25, 'completed',   'B',  'Spring', 2024),
+    (47, 6, 35, 'completed',  'A-',  'Spring', 2024),
+    (48, 6, 1,  'completed',   'A',  'Fall',   2022),
+    (49, 6, 2,  'completed',  'A-',  'Fall',   2022),
+    (50, 6, 3,  'completed',  'B+',  'Spring', 2023),
+    (51, 6, 4,  'completed',  'A-',  'Spring', 2023),
+    (52, 6, 5,  'completed',  'B+',  'Fall',   2023),
+    (53, 6, 6,  'completed',   'B',  'Spring', 2024),
+    (54, 6, 7,  'completed',  'B+',  'Spring', 2024),
+    (55, 6, 13, 'completed',  'A-',  'Fall',   2024),
+    (56, 6, 14, 'completed',  'B+',  'Spring', 2025),
+    (57, 6, 16, 'in_progress', NULL, 'Fall',   2025),
+    (58, 6, 15, 'planned',     NULL, 'Spring', 2026),
+
+    -- Student 7: early coursework
+    (59, 7, 18, 'completed',   'B',  'Fall',   2025),
+    (60, 7, 1,  'completed',  'B+',  'Fall',   2025),
+    (61, 7, 3,  'in_progress', NULL, 'Spring', 2026),
+    (62, 7, 21, 'planned',     NULL, 'Fall',   2026),
+
+    -- Student 8: restarting progression
+    (63, 8, 1,  'completed',  'C+',  'Fall',   2024),
+    (64, 8, 21, 'in_progress', NULL, 'Spring', 2025),
+    (65, 8, 2,  'planned',     NULL, 'Fall',   2025),
+    (66, 8, 3,  'planned',     NULL, 'Spring', 2026);
 
 -- =========================================================
 -- Reset sequences so future inserts continue correctly
